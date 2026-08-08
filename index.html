@@ -583,11 +583,19 @@
   <!-- 09 축의금 인계 -->
   <div class="section">
     <div class="sec-head"><div class="sec-num">09</div><svg class="sec-icon"><use href="#i-money"/></svg><div class="sec-title">축의금 인계</div></div>
-    <div class="field">
-      <label class="flabel">인계 받으실 분</label>
-      <input type="text" name="handover_relation" placeholder="관계 (예: 신랑 아버님)" style="margin-bottom:8px;">
-      <input type="text" name="handover_name" placeholder="성함" style="margin-bottom:8px;">
-      <input type="tel" name="handover_phone" placeholder="연락처 (숫자만 입력)">
+    <div class="row2">
+      <div class="field">
+        <label class="flabel">인계 받으실 분 (신랑측)</label>
+        <input type="text" name="handover_relation_groom" placeholder="관계 (예: 신랑 아버님)" style="margin-bottom:8px;">
+        <input type="text" name="handover_name_groom" placeholder="성함" style="margin-bottom:8px;">
+        <input type="tel" name="handover_phone_groom" placeholder="연락처 (숫자만 입력)">
+      </div>
+      <div class="field">
+        <label class="flabel">인계 받으실 분 (신부측)</label>
+        <input type="text" name="handover_relation_bride" placeholder="관계 (예: 신부 어머님)" style="margin-bottom:8px;">
+        <input type="text" name="handover_name_bride" placeholder="성함" style="margin-bottom:8px;">
+        <input type="tel" name="handover_phone_bride" placeholder="연락처 (숫자만 입력)">
+      </div>
     </div>
   </div>
 
@@ -727,7 +735,8 @@ function label(name){
     gift_criteria:'답례품 수령 기준', gift_script:'답례품 안내 멘트',
     info_parking_way:'주차 등록 방법', info_parking_time:'무료 주차 시간', info_atm:'ATM 위치',
     info_hall:'연회장 위치', info_bride_room:'신부대기실 위치', info_meal_time:'식사 가능 시간',
-    handover_relation:'인계 받으실 분 - 관계', handover_name:'인계 받으실 분 - 성함', handover_phone:'인계 받으실 분 - 연락처',
+    handover_relation_groom:'인계 받으실 분(신랑측) - 관계', handover_name_groom:'인계 받으실 분(신랑측) - 성함', handover_phone_groom:'인계 받으실 분(신랑측) - 연락처',
+    handover_relation_bride:'인계 받으실 분(신부측) - 관계', handover_name_bride:'인계 받으실 분(신부측) - 성함', handover_phone_bride:'인계 받으실 분(신부측) - 연락처',
     sch_mw_arrive:'신랑,신부님 웨딩홀 도착 예상 시간',
     emg_1:'비상연락 1순위', emg_2:'비상연락 2순위',
     photo_consent:'서비스 전 과정 촬영 동의',
@@ -745,7 +754,7 @@ const SECTIONS = [
   ['05. 식권 운영',['ticket_adult_groom','ticket_child_groom','ticket_adult_bride','ticket_child_bride','transfer_check_way','ticket_cross_use','ticket_out_way','ticket_out_place','child_ticket_age','child_to_adult_ticket','ticket_reissue_way','ticket_reissue_way_etc']],
   ['06. 답례품',['gift_yn','gift_type','gift_place','gift_target','gift_criteria','gift_script']],
   ['07. 하객 안내사항',['info_parking_way','info_parking_time','info_atm','info_hall','info_bride_room','info_meal_time']],
-  ['09. 축의금 인계',['handover_relation','handover_name','handover_phone']],
+  ['09. 축의금 인계',['handover_relation_groom','handover_name_groom','handover_phone_groom','handover_relation_bride','handover_name_bride','handover_phone_bride']],
   ['10. 당일 일정',['sch_mw_arrive']],
   ['11. 긴급상황 대응',['emg_1','emg_2']],
   ['12. 사진 및 영상촬영',['photo_consent','extra_camera','link_receiver_groom','link_receiver_bride']],
