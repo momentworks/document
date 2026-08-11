@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --ivory:#FAF6F0;
@@ -674,7 +675,6 @@
 <div class="submit-bar">
   <div class="bar-inner">
     <button class="tmp-save-btn" id="tmpSaveBtn" type="button">임시저장하기</button>
-    <button class="tmp-save-btn" id="pdfPreviewBtn" type="button" style="border-color:var(--rosegold);color:var(--rosegold-deep);">📄 표로 정리해서 PDF로 저장</button>
     <button class="submit-btn" id="submitContractBtn" type="button">설정서 제출하기</button>
     <div class="save-row" id="adminSaveRow" style="display:none;">
       <button class="submit-btn" id="savePngBtn" type="button" style="background:#5C7CA6;font-size:13px;">PNG로 저장</button>
@@ -987,15 +987,27 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
     const originalText = btn.textContent;
 
     btn.disabled = true;
-    btn.textContent = '제출 중...';
+    btn.textContent = 'PDF 생성 중...';
 
     try {
+        const payload = submitContract();
+
+        try {
+            payload.pdf_base64 = await generateSubmissionPdfBase64();
+            payload.pdf_filename = '모먼트웍스_축의대_대행_운영_설정서.pdf';
+        } catch (pdfErr) {
+            console.error('PDF 생성 중 오류가 발생했습니다.', pdfErr);
+            // PDF 생성에 실패해도 설정서 제출 자체는 계속 진행
+        }
+
+        btn.textContent = '제출 중...';
+
         const response = await fetch(GAS_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'text/plain;charset=utf-8'
             },
-            body: JSON.stringify(submitContract())
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
@@ -1192,27 +1204,65 @@ function buildPrintableTable(){
 </html>`;
 }
 
-document.getElementById('pdfPreviewBtn').addEventListener('click', ()=>{
+// 제출(메일 발송)용 표 형태 PDF를 base64로 생성
+async function generateSubmissionPdfBase64(){
+  const html = buildPrintableTable();
+
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-99999px';
+  iframe.style.top = '0';
+  iframe.style.width = '794px';   // A4 폭 (96dpi 기준 210mm)
+  iframe.style.height = '1123px'; // A4 높이 (96dpi 기준 297mm)
+  iframe.style.border = 'none';
+  document.body.appendChild(iframe);
+
+  await new Promise((resolve)=>{
+    iframe.onload = resolve;
+    iframe.srcdoc = html;
+  });
+  await new Promise((resolve)=> setTimeout(resolve, 250)); // 폰트/레이아웃 안정화 대기
+
+  const idoc = iframe.contentDocument;
+  const btnBar = idoc.querySelector('.print-btn-bar');
+  if(btnBar) btnBar.style.display = 'none';
+
+  let base64 = '';
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectFormData()));
-  }catch(e){
-    console.error('저장 중 오류가 발생했습니다.', e);
-  }
-  try{
-    const html = buildPrintableTable();
-    const win = window.open('', '_blank');
-    if(!win){
-      showToast('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요');
-      return;
+    const canvas = await html2canvas(idoc.body, {
+      backgroundColor:'#FFFFFF',
+      scale:2,
+      windowWidth: idoc.documentElement.scrollWidth,
+      windowHeight: idoc.documentElement.scrollHeight
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while(heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
     }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-  }catch(e){
-    console.error('표 생성 중 오류가 발생했습니다.', e);
-    showToast('표 생성에 실패했습니다');
+
+    base64 = pdf.output('datauristring').split(',')[1];
+  } finally {
+    document.body.removeChild(iframe);
   }
-});
+
+  return base64;
+}
 </script>
 </body>
 </html>
