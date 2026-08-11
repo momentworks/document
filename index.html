@@ -674,6 +674,7 @@
 <div class="submit-bar">
   <div class="bar-inner">
     <button class="tmp-save-btn" id="tmpSaveBtn" type="button">임시저장하기</button>
+    <button class="tmp-save-btn" id="pdfPreviewBtn" type="button" style="border-color:var(--rosegold);color:var(--rosegold-deep);">📄 표로 정리해서 PDF로 저장</button>
     <button class="submit-btn" id="submitContractBtn" type="button">설정서 제출하기</button>
     <div class="save-row" id="adminSaveRow" style="display:none;">
       <button class="submit-btn" id="savePngBtn" type="button" style="background:#5C7CA6;font-size:13px;">PNG로 저장</button>
@@ -1059,6 +1060,157 @@ document.getElementById('saveXlsxBtn').addEventListener('click', ()=>{
   }catch(e){
     console.error('엑셀 다운로드 중 오류가 발생했습니다.', e);
     showToast('엑셀 저장에 실패했습니다');
+  }
+});
+
+// ---- PDF-friendly printable table view ----
+function escHtml(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildPrintableTable(){
+  const fd = new FormData(form);
+
+  const g = (name)=> (fd.get(name) || '').toString().trim();
+  const groom = g('groom_name') || '(미입력)';
+  const bride = g('bride_name') || '(미입력)';
+  const wdate = g('wedding_date') || '(미입력)';
+  const wtime = g('wedding_time') || '(미입력)';
+  const venue = g('venue_name') || '(미입력)';
+  const hall  = g('hall_name') || '';
+
+  let sectionsHtml = '';
+  SECTIONS.forEach(([title, keys])=>{
+    const rows = [];
+    keys.forEach(k=>{
+      const vals = fd.getAll(k);
+      const v = vals.filter(x=>x && x.trim()!=='').join(', ');
+      if(v) rows.push(`<tr><td class="c-item">${escHtml(label(k))}</td><td class="c-val">${escHtml(v)}</td></tr>`);
+    });
+    if(rows.length){
+      sectionsHtml += `
+        <table class="ptable">
+          <thead><tr><th colspan="2">${escHtml(title)}</th></tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>`;
+    }
+  });
+
+  // VIP 명단
+  const names = fd.getAll('vip_name[]'), rel = fd.getAll('vip_relation[]'), con = fd.getAll('vip_contact[]'), memo = fd.getAll('vip_memo[]');
+  let vipRows = '';
+  for(let i=0;i<names.length;i++){
+    if(names[i] || rel[i] || con[i] || memo[i]){
+      vipRows += `<tr>
+        <td>${escHtml(names[i] || '(이름 미입력)')}</td>
+        <td>${escHtml(rel[i] || '-')}</td>
+        <td>${escHtml(con[i] || '-')}</td>
+        <td>${escHtml(memo[i] || '-')}</td>
+      </tr>`;
+    }
+  }
+  const vipHtml = vipRows ? `
+    <table class="ptable">
+      <thead><tr><th colspan="4">08. VIP 명단</th></tr></thead>
+      <tbody>
+        <tr class="vip-head"><td>성함(업체명)</td><td>관계</td><td>연락처</td><td>지급 식권 수량</td></tr>
+        ${vipRows}
+      </tbody>
+    </table>` : '';
+
+  const agreeHtml = `
+    <table class="ptable">
+      <thead><tr><th colspan="2">동의 여부</th></tr></thead>
+      <tbody><tr><td class="c-item">동의함</td><td class="c-val">${fd.get('final_agree') ? '예' : '아니오'}</td></tr></tbody>
+    </table>`;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>모먼트웍스_축의대_대행_운영_설정서</title>
+<style>
+  @page{ size:A4; margin:16mm 14mm; }
+  *{ box-sizing:border-box; }
+  body{
+    font-family:'Malgun Gothic','Apple SD Gothic Neo','Pretendard',sans-serif;
+    color:#3A2E26; margin:0; padding:0; font-size:12px; line-height:1.5;
+  }
+  .doc-header{ text-align:center; margin-bottom:18px; border-bottom:2px solid #B8916B; padding-bottom:14px; }
+  .doc-header .brand{ font-size:13px; letter-spacing:.2em; color:#9C7550; font-weight:700; }
+  .doc-header h1{ font-size:20px; margin:8px 0 10px; color:#3A2E26; }
+  .doc-header .meta{ font-size:12.5px; color:#6F6055; }
+  .doc-header .meta b{ color:#3A2E26; }
+  .print-btn-bar{ text-align:center; margin-bottom:16px; }
+  .print-btn-bar button{
+    background:#B8916B; color:#fff; border:none; border-radius:8px;
+    padding:10px 22px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  table.ptable{
+    width:100%; border-collapse:collapse; margin-bottom:14px;
+    page-break-inside:auto;
+  }
+  table.ptable thead th{
+    background:#F3EBE0; color:#3A2E26; text-align:left;
+    padding:7px 10px; font-size:12.5px; font-weight:700;
+    border:1px solid #E6DCCB;
+  }
+  table.ptable tbody tr{ page-break-inside:avoid; }
+  table.ptable td{
+    border:1px solid #E6DCCB; padding:7px 10px; vertical-align:top; font-size:12px;
+  }
+  table.ptable td.c-item{ width:34%; background:#FAF6F0; color:#6F6055; font-weight:600; }
+  table.ptable td.c-val{ width:66%; word-break:keep-all; }
+  table.ptable tr.vip-head td{ background:#F3EBE0; font-weight:700; color:#6F6055; }
+  .doc-footer{ text-align:center; color:#6F6055; font-size:10.5px; margin-top:20px; letter-spacing:.05em; }
+  @media print{
+    .print-btn-bar{ display:none; }
+    body{ padding:0; }
+  }
+</style>
+</head>
+<body>
+  <div class="print-btn-bar"><button onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button></div>
+  <div class="doc-header">
+    <div class="brand">MOMENT WORKS</div>
+    <h1>축의대 대행 운영 설정서</h1>
+    <div class="meta">
+      <b>${escHtml(groom)}</b> ♥ <b>${escHtml(bride)}</b> &nbsp;|&nbsp;
+      예식일 <b>${escHtml(wdate)}</b> ${wtime ? escHtml(wtime) : ''} &nbsp;|&nbsp;
+      <b>${escHtml(venue)}</b>${hall ? ' ' + escHtml(hall) : ''}
+    </div>
+  </div>
+  ${sectionsHtml}
+  ${vipHtml}
+  ${agreeHtml}
+  <div class="doc-footer">본 문서는 ${todayStr} 기준으로 생성되었습니다 · MOMENT WORKS · Managing Meaningful Moments</div>
+</body>
+</html>`;
+}
+
+document.getElementById('pdfPreviewBtn').addEventListener('click', ()=>{
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectFormData()));
+  }catch(e){
+    console.error('저장 중 오류가 발생했습니다.', e);
+  }
+  try{
+    const html = buildPrintableTable();
+    const win = window.open('', '_blank');
+    if(!win){
+      showToast('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  }catch(e){
+    console.error('표 생성 중 오류가 발생했습니다.', e);
+    showToast('표 생성에 실패했습니다');
   }
 });
 </script>
