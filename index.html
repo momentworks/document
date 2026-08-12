@@ -1191,8 +1191,6 @@ function buildPrintableTable(){
   const bride = g('bride_name') || '(미입력)';
   const wdate = g('wedding_date') || '(미입력)';
   const wtime = g('wedding_time') || '(미입력)';
-  const venue = g('venue_name') || '(미입력)';
-  const hall  = g('hall_name') || '';
 
   let sectionsHtml = '';
   SECTIONS.forEach(([title, keys])=>{
@@ -1204,13 +1202,13 @@ function buildPrintableTable(){
     });
     if(rows.length){
       sectionsHtml += `
-        <table class="ptable">
-          <thead>
-            <tr><th colspan="2">${escHtml(title)}</th></tr>
-            <tr class="col-head"><td>항목</td><td>내용</td></tr>
-          </thead>
-          <tbody>${rows.join('')}</tbody>
-        </table>`;
+        <div class="sec-block">
+          <div class="sec-title">${escHtml(title)}</div>
+          <table class="ptable">
+            <thead><tr><td>항목</td><td>내용</td></tr></thead>
+            <tbody>${rows.join('')}</tbody>
+          </table>
+        </div>`;
     }
   });
 
@@ -1228,25 +1226,22 @@ function buildPrintableTable(){
     }
   }
   const vipHtml = vipRows ? `
-    <table class="ptable">
-      <thead><tr><th colspan="4">08. VIP 명단</th></tr></thead>
-      <tbody>
-        <tr class="vip-head"><td>성함(업체명)</td><td>관계</td><td>연락처</td><td>지급 식권 수량</td></tr>
-        ${vipRows}
-      </tbody>
-    </table>` : '';
+    <div class="sec-block">
+      <div class="sec-title">08. VIP 명단</div>
+      <table class="ptable">
+        <thead><tr><td>성함(업체명)</td><td>관계</td><td>연락처</td><td>지급 식권 수량</td></tr></thead>
+        <tbody>${vipRows}</tbody>
+      </table>
+    </div>` : '';
 
   const agreeHtml = `
-    <table class="ptable">
-      <thead>
-        <tr><th colspan="2">동의 여부</th></tr>
-        <tr class="col-head"><td>항목</td><td>내용</td></tr>
-      </thead>
-      <tbody><tr><td class="c-item">동의함</td><td class="c-val">${fd.get('final_agree') ? '예' : '아니오'}</td></tr></tbody>
-    </table>`;
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+    <div class="sec-block">
+      <div class="sec-title">동의 여부</div>
+      <table class="ptable">
+        <thead><tr><td>항목</td><td>내용</td></tr></thead>
+        <tbody><tr><td class="c-item">동의함</td><td class="c-val">${fd.get('final_agree') ? '예' : '아니오'}</td></tr></tbody>
+      </table>
+    </div>`;
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -1258,42 +1253,39 @@ function buildPrintableTable(){
   *{ box-sizing:border-box; }
   body{
     font-family:'Malgun Gothic','Apple SD Gothic Neo','Pretendard',sans-serif;
-    color:#3A2E26; margin:0; padding:0; font-size:12px; line-height:1.5;
+    color:#2E2E2E; margin:0; padding:0; font-size:12px; line-height:1.5;
   }
-  .doc-header{ text-align:center; margin-bottom:18px; border-bottom:2px solid #B8916B; padding-bottom:14px; }
-  .doc-header .brand{ font-size:13px; letter-spacing:.2em; color:#9C7550; font-weight:700; }
-  .doc-header h1{ font-size:20px; margin:8px 0 10px; color:#3A2E26; }
-  .doc-header .meta{ font-size:12.5px; color:#6F6055; }
-  .doc-header .meta b{ color:#3A2E26; }
+  .doc-header{ text-align:center; margin-bottom:22px; }
+  .doc-header h1{ font-size:21px; margin:0 0 8px; color:#1F1F1F; font-weight:700; }
+  .doc-header .meta{ font-size:12.5px; color:#555; }
   .print-btn-bar{ text-align:center; margin-bottom:16px; }
   .print-btn-bar button{
-    background:#B8916B; color:#fff; border:none; border-radius:8px;
+    background:#6FA98A; color:#fff; border:none; border-radius:8px;
     padding:10px 22px; font-size:13px; font-weight:600; cursor:pointer;
   }
+  .sec-block{ margin:16px 0 6px; }
+  .sec-title{
+    font-size:13.5px; font-weight:700; color:#1F1F1F;
+    margin:0 0 8px;
+  }
   table.ptable{
-    width:100%; border-collapse:collapse; margin-bottom:14px;
+    width:100%; border-collapse:collapse; margin-bottom:6px;
     page-break-inside:auto;
   }
-  table.ptable thead th{
-    background:#F3EBE0; color:#3A2E26; text-align:left;
-    padding:7px 10px; font-size:12.5px; font-weight:700;
-    border:1px solid #E6DCCB;
+  table.ptable thead td{
+    background:#E8F1EA; color:#33473C; text-align:left;
+    padding:6px 10px; font-size:11.5px; font-weight:700;
+    border:1px solid #D9E2DC;
   }
-  table.ptable thead tr.col-head td{
-    background:#FBF7F1; color:#9C7550; text-align:left;
-    padding:5px 10px; font-size:10.5px; font-weight:700;
-    letter-spacing:.04em; border:1px solid #E6DCCB;
-  }
-  table.ptable thead tr.col-head td:first-child{ width:34%; }
-  table.ptable thead tr.col-head td:last-child{ width:66%; }
+  table.ptable thead tr td:first-child{ width:34%; }
+  table.ptable thead tr td:last-child{ width:66%; }
   table.ptable tbody tr{ page-break-inside:avoid; }
   table.ptable td{
-    border:1px solid #E6DCCB; padding:7px 10px; vertical-align:top; font-size:12px;
+    border:1px solid #E1E1E1; padding:7px 10px; vertical-align:top; font-size:12px;
   }
-  table.ptable td.c-item{ width:34%; background:#FAF6F0; color:#6F6055; font-weight:600; }
+  table.ptable td.c-item{ width:34%; color:#444; }
   table.ptable td.c-val{ width:66%; word-break:keep-all; }
-  table.ptable tr.vip-head td{ background:#F3EBE0; font-weight:700; color:#6F6055; }
-  .doc-footer{ text-align:center; color:#6F6055; font-size:10.5px; margin-top:20px; letter-spacing:.05em; }
+  .doc-footer{ text-align:center; color:#999; font-size:10.5px; margin-top:20px; letter-spacing:.05em; }
   @media print{
     .print-btn-bar{ display:none; }
     body{ padding:0; }
@@ -1303,18 +1295,12 @@ function buildPrintableTable(){
 <body>
   <div class="print-btn-bar"><button onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button></div>
   <div class="doc-header">
-    <div class="brand">MOMENT WORKS</div>
-    <h1>축의대 대행 운영 설정서</h1>
-    <div class="meta">
-      <b>${escHtml(groom)}</b> ♥ <b>${escHtml(bride)}</b> &nbsp;|&nbsp;
-      예식일 <b>${escHtml(wdate)}</b> ${wtime ? escHtml(wtime) : ''} &nbsp;|&nbsp;
-      <b>${escHtml(venue)}</b>${hall ? ' ' + escHtml(hall) : ''}
-    </div>
+    <h1>모먼트웍스 축의대 대행 운영 설정서</h1>
+    <div class="meta">${escHtml(groom)} · ${escHtml(bride)} ‖ ${escHtml(wdate)} ${escHtml(wtime)}</div>
   </div>
   ${sectionsHtml}
   ${vipHtml}
   ${agreeHtml}
-  <div class="doc-footer">본 문서는 ${todayStr} 기준으로 생성되었습니다 · MOMENT WORKS · Managing Meaningful Moments</div>
 </body>
 </html>`;
 }
