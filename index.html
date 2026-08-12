@@ -1068,11 +1068,16 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
         const payload = submitContract();
 
         try {
-            payload.pdf_base64 = await generateSubmissionPdfBase64();
-            const gName = (payload.groom_name || '신랑').trim();
-            const bName = (payload.bride_name || '신부').trim();
-            const wDate = (payload.wedding_date || '').replaceAll('-', '');
-            payload.pdf_filename = `모먼트웍스_축의대설정서_${gName}_${bName}${wDate ? '_' + wDate : ''}.pdf`;
+            const pdfB64 = await generateSubmissionPdfBase64();
+            if(pdfB64){
+                payload.pdf_base64 = pdfB64;
+                const gName = (payload.groom_name || '신랑').trim();
+                const bName = (payload.bride_name || '신부').trim();
+                const wDate = (payload.wedding_date || '').replaceAll('-', '');
+                payload.pdf_filename = `모먼트웍스_축의대설정서_${gName}_${bName}${wDate ? '_' + wDate : ''}.pdf`;
+            } else {
+                console.warn('PDF 용량 제한으로 첨부 없이 제출을 진행합니다.');
+            }
         } catch (pdfErr) {
             console.error('PDF 생성 중 오류가 발생했습니다.', pdfErr);
             // PDF 생성에 실패해도 설정서 제출 자체는 계속 진행
@@ -1080,15 +1085,34 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
 
         btn.textContent = '제출 중...';
 
-        const response = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
-            },
-            body: JSON.stringify(payload)
-        });
+        let response;
+        try {
+            response = await fetch(GAS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (networkErr) {
+            console.error('네트워크 요청 자체가 실패했습니다.', networkErr);
+            throw new Error('네트워크 연결 오류로 서버에 도달하지 못했습니다. 인터넷 연결을 확인해주세요.');
+        }
 
-        const result = await response.json();
+        if (!response.ok) {
+            const bodyText = await response.text().catch(()=>'');
+            console.error('서버 응답 오류', response.status, bodyText);
+            throw new Error(`서버 응답 오류 (status ${response.status}). 잠시 후 다시 시도해주세요.`);
+        }
+
+        let result;
+        try {
+            result = await response.json();
+        } catch (parseErr) {
+            const bodyText = await response.text().catch(()=>'');
+            console.error('서버 응답을 해석할 수 없습니다.', parseErr, bodyText);
+            throw new Error('서버 응답 형식이 올바르지 않습니다. 관리자에게 문의해주세요.');
+        }
         console.log(result);
 
         if (result.success) {
@@ -1102,7 +1126,7 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
 
     } catch (error) {
         console.error(error);
-        alert('서버와 통신 중 오류가 발생했습니다.');
+        alert(error.message || '서버와 통신 중 오류가 발생했습니다.');
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -1343,7 +1367,7 @@ async function generateSubmissionPdfBase64(){
 
       const canvas = await html2canvas(block, {
         backgroundColor:'#FFFFFF',
-        scale:2,
+        scale:1.5,
         windowWidth: idoc.documentElement.scrollWidth
       });
 
@@ -1357,12 +1381,19 @@ async function generateSubmissionPdfBase64(){
       }
       firstBlock = false;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL('image/jpeg', 0.82);
       pdf.addImage(imgData, 'JPEG', marginX, currentY, imgWidth, imgHeight);
       currentY += imgHeight + gapMm;
     }
 
     base64 = pdf.output('datauristring').split(',')[1];
+
+    // 용량이 너무 크면(약 4.5MB 이상) 서버 전송 실패 위험이 있어 첨부를 생략
+    const MAX_PDF_BASE64_LENGTH = 6000000; // base64 약 4.5MB
+    if(base64 && base64.length > MAX_PDF_BASE64_LENGTH){
+      console.warn(`생성된 PDF 용량이 너무 커서(base64 ${base64.length}자) 첨부를 생략합니다.`);
+      base64 = '';
+    }
   } finally {
     document.body.removeChild(iframe);
   }
