@@ -203,6 +203,7 @@
   }
   .chip.block{width:100%;}
   .chip.block label{width:100%;justify-content:flex-start;border-radius:10px;text-align:left;}
+  .chip input:disabled + label{opacity:.4;cursor:not-allowed;}
 
   .subfield-group{
     margin-top:10px;padding:12px;
@@ -211,6 +212,14 @@
 
   .etc-input{margin-top:8px;}
   .etc-input input{width:100%;}
+
+  /* 비활성화(작성 불필요) 상태 */
+  input:disabled,textarea:disabled{
+    background:#EDE7DC;color:#B7AA98;cursor:not-allowed;
+  }
+  .subfield-group.is-disabled,.vip-body.is-disabled{opacity:.5;}
+  .add-row-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .vtable td input:disabled{background:#F2EEE6;}
 
   /* VIP Table Mobile Responsive Container */
   .table-responsive {
@@ -445,6 +454,7 @@
         <input type="hidden" name="wedding_time" id="weddingTimeHidden">
       </div>
     </div>
+    <div class="field"><label class="flabel">지역</label><input type="text" name="venue_region" placeholder="예: 서울 영등포구"></div>
     <div class="field"><label class="flabel">예식장명</label><input type="text" name="venue_name" placeholder="예: 더컨벤션 영등포"></div>
     <div class="field"><label class="flabel">홀 이름</label><input type="text" name="hall_name" placeholder="예: 그랜드볼룸 2층"></div>
     <div class="row2">
@@ -467,11 +477,11 @@
     <div class="sec-head"><div class="sec-num">03</div><svg class="sec-icon"><use href="#i-heart"/></svg><div class="sec-title">관계 설정</div></div>
     <div class="field">
       <div class="choices">
+        <div class="chip block"><input type="radio" name="relation_type" id="rt5" value="축의대 업체"><label for="rt5">축의대 업체</label></div>
         <div class="chip block"><input type="radio" name="relation_type" id="rt1" value="친구"><label for="rt1">친구</label></div>
         <div class="chip block"><input type="radio" name="relation_type" id="rt2" value="회사 동료"><label for="rt2">회사 동료</label></div>
         <div class="chip block"><input type="radio" name="relation_type" id="rt3" value="학교 선후배"><label for="rt3">학교 선후배</label></div>
         <div class="chip block"><input type="radio" name="relation_type" id="rt4" value="사회적 지인"><label for="rt4">사회적 지인</label></div>
-        <div class="chip block"><input type="radio" name="relation_type" id="rt5" value="축의대 업체"><label for="rt5">축의대 업체</label></div>
         <div class="chip block"><input type="radio" name="relation_type" id="rt6" value="기타"><label for="rt6">기타</label></div>
       </div>
       <div class="etc-input"><input type="text" name="relation_type_etc" placeholder="기타 내용을 입력해주세요"></div>
@@ -575,12 +585,14 @@
         <div class="chip"><input type="radio" name="gift_yn" id="gy1" value="있음"><label for="gy1">있음</label></div>
         <div class="chip"><input type="radio" name="gift_yn" id="gy2" value="없음"><label for="gy2">없음</label></div>
       </div>
+      <div class="subfield-group" id="giftBody">
+        <div class="field"><label class="flabel">종류 (해당 시)</label><input type="text" name="gift_type" placeholder="예: 와인 / 와플세트"></div>
+        <div class="field"><label class="flabel">수령 장소</label><input type="text" name="gift_place" placeholder="예: 축의대 옆 데스크"></div>
+        <div class="field"><label class="flabel">수령 대상</label><input type="text" name="gift_target" placeholder="예: 식사 안 하시는 하객"></div>
+        <div class="field"><label class="flabel">수령 기준</label><input type="text" name="gift_criteria" placeholder="예: 봉투 1개당 1개"></div>
+        <div class="field" style="margin-bottom:0;"><label class="flabel">안내 멘트</label><textarea name="gift_script" placeholder="하객 안내 시 전달할 멘트를 적어주세요."></textarea></div>
+      </div>
     </div>
-    <div class="field"><label class="flabel">종류 (해당 시)</label><input type="text" name="gift_type" placeholder="예: 와인 / 와플세트"></div>
-    <div class="field"><label class="flabel">수령 장소</label><input type="text" name="gift_place" placeholder="예: 축의대 옆 데스크"></div>
-    <div class="field"><label class="flabel">수령 대상</label><input type="text" name="gift_target" placeholder="예: 식사 안 하시는 하객"></div>
-    <div class="field"><label class="flabel">수령 기준</label><input type="text" name="gift_criteria" placeholder="예: 봉투 1개당 1개"></div>
-    <div class="field"><label class="flabel">안내 멘트</label><textarea name="gift_script" placeholder="하객 안내 시 전달할 멘트를 적어주세요."></textarea></div>
   </div>
 
   <!-- 07 하객 안내사항 -->
@@ -598,27 +610,37 @@
   <!-- 08 VIP 명단 -->
   <div class="section">
     <div class="sec-head"><div class="sec-num">08</div><svg class="sec-icon"><use href="#i-star"/></svg><div class="sec-title">VIP 명단</div></div>
-    <div class="sec-note">별도 축의금 확인 절차 없이 식권 지급해 드릴 분의 명단을 작성해 주세요.(예: 헬퍼님, 사진작가님 등)</div>
-    
-    <div class="table-responsive">
-      <table class="vtable" id="vipTable">
-        <thead>
-          <tr>
-            <th style="width:28%">성함(업체명)</th>
-            <th style="width:20%">관계</th>
-            <th style="width:26%">연락처(선택)</th>
-            <th style="width:26%">지급 식권 수량</th>
-          </tr>
-        </thead>
-        <tbody id="vipTbody">
-          <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
-          <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
-          <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
-        </tbody>
-      </table>
+    <div class="field">
+      <label class="flabel">VIP 명단 작성 여부</label>
+      <div class="choices">
+        <div class="chip"><input type="radio" name="vip_yn" id="vy1" value="있음"><label for="vy1">있음</label></div>
+        <div class="chip"><input type="radio" name="vip_yn" id="vy2" value="없음"><label for="vy2">없음</label></div>
+      </div>
     </div>
-    <span class="table-scroll-hint">👈 좌우로 스크롤하여 내용을 작성하세요</span>
-    <button type="button" class="add-row-btn" id="addVipRow">+ VIP 행 추가하기</button>
+
+    <div class="vip-body" id="vipBody">
+      <div class="sec-note">별도 축의금 확인 절차 없이 식권 지급해 드릴 분의 명단을 작성해 주세요.(예: 헬퍼님, 사진작가님 등)</div>
+
+      <div class="table-responsive">
+        <table class="vtable" id="vipTable">
+          <thead>
+            <tr>
+              <th style="width:28%">성함(업체명)</th>
+              <th style="width:20%">관계</th>
+              <th style="width:26%">연락처(선택)</th>
+              <th style="width:26%">지급 식권 수량</th>
+            </tr>
+          </thead>
+          <tbody id="vipTbody">
+            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
+            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
+            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <span class="table-scroll-hint">👈 좌우로 스크롤하여 내용을 작성하세요</span>
+      <button type="button" class="add-row-btn" id="addVipRow">+ VIP 행 추가하기</button>
+    </div>
   </div>
 
   <!-- 09 축의금 인계 -->
@@ -643,7 +665,29 @@
   <!-- 10 당일 일정 -->
   <div class="section">
     <div class="sec-head"><div class="sec-num">10</div><svg class="sec-icon"><use href="#i-clock"/></svg><div class="sec-title">당일 일정</div></div>
-    <div class="field"><label class="flabel">신랑, 신부님 웨딩홀 도착 예상 시간</label><input type="time" name="sch_mw_arrive"></div>
+    <div class="field">
+      <label class="flabel">신랑, 신부님 웨딩홀 도착 예상 시간</label>
+      <div class="time-select-group">
+        <select class="time-select" id="schArriveAmpm" aria-label="오전/오후">
+          <option value="">--</option>
+          <option value="오전">오전</option>
+          <option value="오후">오후</option>
+        </select>
+        <select class="time-select" id="schArriveHour" aria-label="시">
+          <option value="">시</option>
+          <option value="01">01</option><option value="02">02</option><option value="03">03</option>
+          <option value="04">04</option><option value="05">05</option><option value="06">06</option>
+          <option value="07">07</option><option value="08">08</option><option value="09">09</option>
+          <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+        </select>
+        <select class="time-select" id="schArriveMinute" aria-label="분">
+          <option value="">분</option>
+          <option value="00">00</option><option value="10">10</option><option value="20">20</option>
+          <option value="30">30</option><option value="40">40</option><option value="50">50</option>
+        </select>
+      </div>
+      <input type="hidden" name="sch_mw_arrive" id="schArriveHidden">
+    </div>
   </div>
 
   <!-- 11 긴급상황 대응 -->
@@ -690,6 +734,7 @@
         <div class="chip block"><input type="radio" name="guide_doc" id="gd2" value="양측 모두 제작"><label for="gd2">양측 모두 제작</label></div>
         <div class="chip block"><input type="radio" name="guide_doc" id="gd3" value="제작하지 않음"><label for="gd3">제작하지 않음</label></div>
       </div>
+      <div class="sec-note" style="margin:8px 0 0 0;">한측 계약시에도 원하시는 경우, 양측 모두 제작해 드립니다.</div>
     </div>
   </div>
 
@@ -728,18 +773,57 @@
 <script>
 const form = document.getElementById('surveyForm');
 
-// ---- progress ----
-function updateProgress(){
-  const inputs = form.querySelectorAll('input[type=text],input[type=tel],input[type=time],input[type=date],input[type=hidden],textarea');
-  let filled = 0, total = inputs.length;
-  inputs.forEach(el=>{ if(el.value.trim() !== '') filled++; });
+// ---- 예/아니오, 가능/불가능, 있음/없음 선택 시 관련 입력칸 비활성화 ----
+const CONDITIONAL_GROUPS = {
+  transfer_yn:{ negative:'아니오', targets:['input[name="groom_account"]','input[name="bride_account"]'], dimEl:()=>document.querySelector('#surveyForm input[name="transfer_yn"]').closest('.field').querySelector('.subfield-group') },
+  gift_yn:{ negative:'없음', targets:['input[name="gift_type"]','input[name="gift_place"]','input[name="gift_target"]','input[name="gift_criteria"]','textarea[name="gift_script"]'], dimEl:()=>document.getElementById('giftBody') },
+  vip_yn:{ negative:'없음', targets:['#vipTable input','#addVipRow'], dimEl:()=>document.getElementById('vipBody') }
+};
 
-  const groupNames = new Set();
-  form.querySelectorAll('input[type=radio],input[type=checkbox]').forEach(el=>groupNames.add(el.name));
-  total += groupNames.size;
-  groupNames.forEach(name=>{
-    if(form.querySelector(`input[name="${CSS.escape(name)}"]:checked`)) filled++;
+function applyConditionalGroup(name){
+  const cfg = CONDITIONAL_GROUPS[name];
+  if(!cfg) return;
+  const checked = form.querySelector(`input[name="${CSS.escape(name)}"]:checked`);
+  const isNegative = !!(checked && checked.value === cfg.negative);
+  cfg.targets.forEach(sel=>{
+    form.querySelectorAll(sel).forEach(el=>{ el.disabled = isNegative; });
   });
+  const dim = cfg.dimEl();
+  if(dim) dim.classList.toggle('is-disabled', isNegative);
+}
+function applyAllConditionalGroups(){
+  Object.keys(CONDITIONAL_GROUPS).forEach(applyConditionalGroup);
+}
+form.addEventListener('change', (e)=>{
+  if(e.target && e.target.type === 'radio' && CONDITIONAL_GROUPS[e.target.name]) applyConditionalGroup(e.target.name);
+});
+
+// ---- progress (칸 단위가 아닌 항목 단위로 집계) ----
+function isFieldItemFilled(item){
+  const radios = item.querySelectorAll('input[type=radio]');
+  if(radios.length){
+    const names = new Set(Array.from(radios).map(r=>r.name));
+    for(const n of names){
+      if(!form.querySelector(`input[name="${CSS.escape(n)}"]:checked`)) return false;
+    }
+    return true;
+  }
+  const inputs = item.querySelectorAll('input[type=text],input[type=tel],input[type=time],input[type=date],input[type=hidden],textarea');
+  if(!inputs.length) return false;
+  return Array.from(inputs).some(el=>!el.disabled && el.value.trim() !== '');
+}
+function updateProgress(){
+  const allFields = Array.from(form.querySelectorAll('.field'));
+  // 다른 .field 안에 중첩된 항목(예: 계좌/답례품 상세)은 상위 항목 1개로만 집계
+  const topFields = allFields.filter(f => !f.parentElement.closest('.field'));
+  const infoRows = Array.from(form.querySelectorAll('.info-row'));
+  const items = [...topFields, ...infoRows];
+
+  let total = items.length + 1; // 동의 여부(1항목) — VIP 명단은 08번 선택 항목(.field)이 이미 1개로 집계됨
+  let filled = 0;
+  items.forEach(item=>{ if(isFieldItemFilled(item)) filled++; });
+
+  if(document.getElementById('finalAgree').checked) filled++;
 
   const pct = total ? Math.round((filled/total)*100) : 0;
   document.getElementById('progressFill').style.width = pct+'%';
@@ -747,6 +831,7 @@ function updateProgress(){
 }
 form.addEventListener('input', updateProgress);
 form.addEventListener('change', updateProgress);
+applyAllConditionalGroups();
 updateProgress();
 
 // ---- VIP row add ----
@@ -755,13 +840,18 @@ document.getElementById('addVipRow').addEventListener('click', ()=>{
   const tr = document.createElement('tr');
   tr.innerHTML = `<td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td>`;
   tbody.appendChild(tr);
+  // 현재 VIP 명단 작성 여부가 '없음'이면 새로 추가된 행도 비활성화 상태로 시작
+  const vipChecked = form.querySelector('input[name="vip_yn"]:checked');
+  if(vipChecked && vipChecked.value === '없음'){
+    tr.querySelectorAll('input').forEach(el=> el.disabled = true);
+  }
 });
 
 // ---- build summary ----
 function label(name){
   const map = {
     groom_name:'신랑 성함', bride_name:'신부 성함', wedding_date:'예식일', wedding_time:'예식 시작시간',
-    venue_name:'예식장명', hall_name:'홀 이름', groom_guest_count:'신랑측 예상 하객 수', bride_guest_count:'신부측 예상 하객 수',
+    venue_name:'예식장명', venue_region:'지역', hall_name:'홀 이름', groom_guest_count:'신랑측 예상 하객 수', bride_guest_count:'신부측 예상 하객 수',
     groom_side_name:'[신랑측] 혼주 성함', bride_side_name:'[신부측] 혼주 성함',
     relation_type:'관계 설정', relation_type_etc:'관계 설정(기타)',
     money_op:'축의금 정리 방식', transfer_yn:'계좌이체 받을 예정', groom_account:'신랑 계좌', bride_account:'신부 계좌',
@@ -772,6 +862,7 @@ function label(name){
     ticket_out_way:'식권 소진 시 대응 방법', ticket_out_place:'식권 소진 시 추가 수령 장소',
     child_ticket_age:'소인 식권의 나이 기준', child_to_adult_ticket:'소인 식권 소진 시 대인 식권 사용 가능 여부',
     ticket_reissue_way:'식권 추가 지급 요청 시 대응 방법', ticket_reissue_way_etc:'식권 추가 지급 대응(기타)',
+    vip_yn:'VIP 명단 작성 여부',
     gift_yn:'답례품 제공 여부', gift_type:'답례품 종류', gift_place:'답례품 수령 장소', gift_target:'답례품 수령 대상',
     gift_criteria:'답례품 수령 기준', gift_script:'답례품 안내 멘트',
     info_parking_way:'주차 등록 방법', info_parking_time:'무료 주차 시간', info_atm:'ATM 위치',
@@ -788,7 +879,7 @@ function label(name){
 }
 
 const SECTIONS = [
-  ['01. 예식 기본정보',['groom_name','bride_name','wedding_date','wedding_time','venue_name','hall_name','groom_guest_count','bride_guest_count']],
+  ['01. 예식 기본정보',['groom_name','bride_name','wedding_date','wedding_time','venue_region','venue_name','hall_name','groom_guest_count','bride_guest_count']],
   ['02. 양가 정보',['groom_side_name','bride_side_name']],
   ['03. 관계 설정',['relation_type','relation_type_etc']],
   ['04. 축의금 정리방식',['money_op','transfer_yn','groom_account','bride_account','refund_way','refund_way_etc']],
@@ -819,6 +910,7 @@ function buildSummary(){
   });
 
   // VIP table
+  const vipYn = fd.get('vip_yn') || '';
   const names = fd.getAll('vip_name[]'), rel = fd.getAll('vip_relation[]'), con = fd.getAll('vip_contact[]'), memo = fd.getAll('vip_memo[]');
   let vipBlock = '';
   for(let i=0;i<names.length;i++){
@@ -826,7 +918,11 @@ function buildSummary(){
       vipBlock += `- ${names[i]||'(이름 미입력)'} / 관계: ${rel[i]||'-'} / 연락처: ${con[i]||'-'} / 지급 식권 수량: ${memo[i]||'-'}\n`;
     }
   }
-  if(vipBlock) out += `\n■ 08. VIP 명단\n${vipBlock}`;
+  if(vipYn || vipBlock){
+    out += `\n■ 08. VIP 명단\n`;
+    if(vipYn) out += `- VIP 명단 작성 여부: ${vipYn}\n`;
+    out += vipBlock;
+  }
 
   out += `\n■ 동의 여부\n- 동의함: ${fd.get('final_agree') ? '예' : '아니오'}\n`;
 
@@ -861,6 +957,22 @@ function syncWeddingTimeHidden(){
   document.getElementById(id).addEventListener('change', syncWeddingTimeHidden);
 });
 syncWeddingTimeHidden();
+
+// 당일 일정: 신랑,신부님 웨딩홀 도착 예상 시간 (10분 단위) — 오전/오후·시·분 select 값을 24시간제 hidden input(sch_mw_arrive)에 반영
+function syncSchArriveHidden(){
+  const ampm = document.getElementById('schArriveAmpm').value;
+  const hour12 = document.getElementById('schArriveHour').value;
+  const minute = document.getElementById('schArriveMinute').value;
+  const hidden = document.getElementById('schArriveHidden');
+  if(!ampm || !hour12 || !minute){ hidden.value = ''; return; }
+  let h = parseInt(hour12, 10) % 12;
+  if(ampm === '오후') h += 12;
+  hidden.value = `${String(h).padStart(2,'0')}:${minute}`;
+}
+['schArriveAmpm','schArriveHour','schArriveMinute'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', syncSchArriveHidden);
+});
+syncSchArriveHidden();
 
 function collectFormData(){
   const data = {};
@@ -920,6 +1032,25 @@ function restoreFormData(){
     }
   }
 
+  // 신랑,신부님 웨딩홀 도착 예상 시간(오전/오후·시·분 select)을 저장된 24시간제 값으로 복원
+  if(data.sch_mw_arrive){
+    const m2 = /^(\d{2}):(\d{2})$/.exec(data.sch_mw_arrive);
+    if(m2){
+      let h = parseInt(m2[1], 10);
+      const minute = m2[2];
+      const ampm = h < 12 ? '오전' : '오후';
+      let h12 = h % 12;
+      if(h12 === 0) h12 = 12;
+      const ampmEl = document.getElementById('schArriveAmpm');
+      const hourEl = document.getElementById('schArriveHour');
+      const minuteEl = document.getElementById('schArriveMinute');
+      if(ampmEl) ampmEl.value = ampm;
+      if(hourEl) hourEl.value = String(h12).padStart(2,'0');
+      if(minuteEl) minuteEl.value = minute;
+      syncSchArriveHidden();
+    }
+  }
+
   const vipCount = (data.vip_name || []).length;
   const tbody = document.getElementById('vipTbody');
   while(tbody.children.length < vipCount){ document.getElementById('addVipRow').click(); }
@@ -935,6 +1066,7 @@ function restoreFormData(){
   }
 }
 restoreFormData();
+applyAllConditionalGroups();
 updateProgress();
 
 // ---- admin mode ----
@@ -982,6 +1114,7 @@ function downloadExcel(){
     });
   });
 
+  if(fd.get('vip_yn')) rows.push(['08. VIP 명단', 'VIP 명단 작성 여부', fd.get('vip_yn')]);
   const names = fd.getAll('vip_name[]'), rel = fd.getAll('vip_relation[]'), con = fd.getAll('vip_contact[]'), memo = fd.getAll('vip_memo[]');
   for(let i=0;i<names.length;i++){
     if(names[i] || rel[i] || con[i] || memo[i]){
@@ -1008,6 +1141,7 @@ function submitContract(){
       if(v) rows.push([title, label(k), v]);
     });
   });
+  if(fd.get('vip_yn')) rows.push(['08. VIP 명단', 'VIP 명단 작성 여부', fd.get('vip_yn')]);
   const names = fd.getAll('vip_name[]'), rel = fd.getAll('vip_relation[]'), con = fd.getAll('vip_contact[]'), memo = fd.getAll('vip_memo[]');
   for(let i=0;i<names.length;i++){
     if(names[i] || rel[i] || con[i] || memo[i]){
@@ -1023,6 +1157,7 @@ function submitContract(){
     wedding_date: fd.get('wedding_date') || '',
     wedding_time: fd.get('wedding_time') || '',
     venue_name: fd.get('venue_name') || '',
+    venue_region: fd.get('venue_region') || '',
     contractor_name: fd.get('contractor_name') || '',
     rows: rows,
     summary: buildSummary()
@@ -1191,56 +1326,94 @@ function buildPrintableTable(){
   const bride = g('bride_name') || '(미입력)';
   const wdate = g('wedding_date') || '(미입력)';
   const wtime = g('wedding_time') || '(미입력)';
+  const venue = g('venue_name') || '(미입력)';
+
+  // 각 행(row)을 개별 블록으로 렌더링 → PDF 변환 시 표가 페이지 경계에서 잘리지 않도록 함
+  let rowCounter = 0;
+  function dataRowHtml(k, v, opts){
+    const alt = (rowCounter++ % 2 === 1) ? ' alt' : '';
+    const pos = (opts && opts.first ? ' first-row' : '') + (opts && opts.last ? ' last-row' : '');
+    return `<table class="ptable row-block${alt}${pos}" data-gap="0"><tbody><tr><td class="c-item">${escHtml(k)}</td><td class="c-val">${escHtml(v)}</td></tr></tbody></table>`;
+  }
+  function vipHeaderRowHtml(gap){
+    return `<table class="ptable row-block vtable-row first-row" data-gap="${gap}"><thead><tr><td>성함(업체명)</td><td>관계</td><td>연락처</td><td>지급 식권 수량</td></tr></thead></table>`;
+  }
+  function vipRowHtml(a,b,c,d,opts){
+    const alt = (rowCounter++ % 2 === 1) ? ' alt' : '';
+    const pos = (opts && opts.last ? ' last-row' : '');
+    return `<table class="ptable row-block vtable-row${alt}${pos}" data-gap="0"><tbody><tr><td>${escHtml(a)}</td><td>${escHtml(b)}</td><td>${escHtml(c)}</td><td>${escHtml(d)}</td></tr></tbody></table>`;
+  }
+  function secHeadHtml(num, title, gap){
+    rowCounter = 0;
+    const badge = num ? `<span class="rpt-badge">${escHtml(num)}</span>` : '';
+    return `<div class="rpt-sec-head" data-gap="${gap}">${badge}<span class="rpt-sec-title">${escHtml(title)}</span></div>`;
+  }
+
+  // VIP 명단(08)을 07 하객 안내사항과 09 축의금 인계 사이, 번호 순서에 맞춰 배치
+  const vipYn = fd.get('vip_yn') || '';
+  const names = fd.getAll('vip_name[]'), rel = fd.getAll('vip_relation[]'), con = fd.getAll('vip_contact[]'), memo = fd.getAll('vip_memo[]');
+  const vipEntries = [];
+  for(let i=0;i<names.length;i++){
+    if(names[i] || rel[i] || con[i] || memo[i]){
+      vipEntries.push([names[i]||'(이름 미입력)', rel[i]||'-', con[i]||'-', memo[i]||'-']);
+    }
+  }
+  function buildVipHtml(gap){
+    let h = secHeadHtml('08', 'VIP 명단', gap);
+    if(vipYn){
+      h += dataRowHtml('VIP 명단 작성 여부', vipYn, { first:true, last: vipEntries.length===0 });
+    }
+    if(vipEntries.length){
+      h += vipHeaderRowHtml(vipYn ? 4 : 0);
+      vipEntries.forEach(([a,b,c,d], i)=>{ h += vipRowHtml(a,b,c,d, { last: i===vipEntries.length-1 }); });
+    }
+    return h;
+  }
 
   let sectionsHtml = '';
+  let firstSection = true;
   SECTIONS.forEach(([title, keys])=>{
-    const rows = [];
+    const rowsData = [];
     keys.forEach(k=>{
       const vals = fd.getAll(k);
       const v = vals.filter(x=>x && x.trim()!=='').join(', ');
-      if(v) rows.push(`<tr><td class="c-item">${escHtml(label(k))}</td><td class="c-val">${escHtml(v)}</td></tr>`);
+      if(v) rowsData.push([label(k), v]);
     });
-    if(rows.length){
-      sectionsHtml += `
-        <div class="sec-block">
-          <div class="sec-title">${escHtml(title)}</div>
-          <table class="ptable">
-            <thead><tr><td>항목</td><td>내용</td></tr></thead>
-            <tbody>${rows.join('')}</tbody>
-          </table>
-        </div>`;
+    if(rowsData.length){
+      const m = /^(\d{2})\.\s*(.+)$/.exec(title);
+      const num = m ? m[1] : '';
+      sectionsHtml += secHeadHtml(num, m ? m[2] : title, firstSection ? 0 : 7);
+      rowsData.forEach(([k,v], i)=>{
+        sectionsHtml += dataRowHtml(k, v, { first: i===0, last: i===rowsData.length-1 });
+      });
+      firstSection = false;
+    }
+    // 07번 섹션 직후, 09번 섹션 직전에 VIP 명단(08) 삽입
+    if(num_after(title) === '07' && (vipYn || vipEntries.length)){
+      sectionsHtml += buildVipHtml(firstSection ? 0 : 7);
+      firstSection = false;
     }
   });
+  function num_after(title){ const m = /^(\d{2})\./.exec(title); return m ? m[1] : ''; }
 
-  // VIP 명단
-  const names = fd.getAll('vip_name[]'), rel = fd.getAll('vip_relation[]'), con = fd.getAll('vip_contact[]'), memo = fd.getAll('vip_memo[]');
-  let vipRows = '';
-  for(let i=0;i<names.length;i++){
-    if(names[i] || rel[i] || con[i] || memo[i]){
-      vipRows += `<tr>
-        <td>${escHtml(names[i] || '(이름 미입력)')}</td>
-        <td>${escHtml(rel[i] || '-')}</td>
-        <td>${escHtml(con[i] || '-')}</td>
-        <td>${escHtml(memo[i] || '-')}</td>
-      </tr>`;
-    }
+  // 혹시 07번 섹션 자체가 비어 있어 위에서 VIP가 삽입되지 못한 경우를 대비한 안전장치
+  if((vipYn || vipEntries.length) && !sectionsHtml.includes('VIP 명단')){
+    sectionsHtml += buildVipHtml(firstSection ? 0 : 7);
+    firstSection = false;
   }
-  const vipHtml = vipRows ? `
-    <div class="sec-block">
-      <div class="sec-title">08. VIP 명단</div>
-      <table class="ptable">
-        <thead><tr><td>성함(업체명)</td><td>관계</td><td>연락처</td><td>지급 식권 수량</td></tr></thead>
-        <tbody>${vipRows}</tbody>
-      </table>
-    </div>` : '';
 
-  const agreeHtml = `
-    <div class="sec-block">
-      <div class="sec-title">동의 여부</div>
-      <table class="ptable">
-        <thead><tr><td>항목</td><td>내용</td></tr></thead>
-        <tbody><tr><td class="c-item">동의함</td><td class="c-val">${fd.get('final_agree') ? '예' : '아니오'}</td></tr></tbody>
-      </table>
+  const agreeHtml = fd.get('final_agree') !== null
+    ? `<div class="rpt-seal" data-gap="7">
+        <span class="rpt-seal-check">${fd.get('final_agree') ? '✓' : '·'}</span>
+        <span class="rpt-seal-text">${fd.get('final_agree') ? '위 내용은 사실과 다름없으며, 원활한 서비스 제공을 위해 작성하였습니다.' : '동의 미확인'}</span>
+      </div>`
+    : '';
+
+  const closingHtml = `
+    <div class="rpt-closing" data-gap="10">
+      <div class="rpt-closing-rule"></div>
+      <div class="rpt-closing-text">작성해 주셔서 감사합니다. 소중한 하루를 정성껏 준비하겠습니다.</div>
+      <div class="rpt-closing-brand">MOMENT WORKS · Managing Meaningful Moments</div>
     </div>`;
 
   return `<!DOCTYPE html>
@@ -1248,44 +1421,127 @@ function buildPrintableTable(){
 <head>
 <meta charset="UTF-8">
 <title>모먼트웍스_축의대_대행_운영_설정서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  :root{
+    --ivory:#FAF6F0; --ivory-deep:#F3EBE0; --ink:#3A2E26; --ink-soft:#6F6055;
+    --rosegold:#B8916B; --rosegold-deep:#9C7550; --blush:#E3B9B4; --line:#E6DCCB; --white:#FFFFFF;
+  }
   @page{ size:A4; margin:16mm 14mm; }
   *{ box-sizing:border-box; }
   body{
-    font-family:'Malgun Gothic','Apple SD Gothic Neo','Pretendard',sans-serif;
-    color:#2E2E2E; margin:0; padding:0; font-size:12px; line-height:1.5;
+    font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    color:var(--ink); margin:0; padding:0; font-size:12px; line-height:1.55;
+    background:var(--white);
   }
-  .doc-header{ text-align:center; margin-bottom:22px; }
-  .doc-header h1{ font-size:21px; margin:0 0 8px; color:#1F1F1F; font-weight:700; }
-  .doc-header .meta{ font-size:12.5px; color:#555; }
   .print-btn-bar{ text-align:center; margin-bottom:16px; }
   .print-btn-bar button{
-    background:#6FA98A; color:#fff; border:none; border-radius:8px;
+    background:var(--rosegold); color:#fff; border:none; border-radius:8px;
     padding:10px 22px; font-size:13px; font-weight:600; cursor:pointer;
   }
-  .sec-block{ margin:16px 0 6px; }
-  .sec-title{
-    font-size:13.5px; font-weight:700; color:#1F1F1F;
-    margin:0 0 8px;
+
+  /* ---- 표지 ---- */
+  .rpt-cover{
+    padding:0 0 18px;
+    margin-bottom:4px;
+    border-bottom:2px solid var(--rosegold-deep);
   }
+  .rpt-cover-bar{
+    height:6px; width:100%;
+    background:linear-gradient(90deg,var(--rosegold),var(--blush));
+    margin-bottom:22px;
+  }
+  .rpt-eyebrow{
+    text-align:center; font-size:11px; letter-spacing:.28em; font-weight:700;
+    color:var(--rosegold-deep); margin-bottom:10px;
+  }
+  .rpt-title{
+    text-align:center; font-family:'Noto Serif KR',serif; font-weight:700;
+    font-size:25px; color:var(--ink); margin:0 0 8px;
+  }
+  .rpt-subtitle{
+    text-align:center; font-family:'Noto Serif KR',serif; font-style:italic;
+    font-size:13px; color:var(--ink-soft); margin:0 0 16px;
+  }
+  .rpt-divider{ width:56px; height:2px; background:var(--rosegold); margin:0 auto 18px; }
+  .rpt-glance{ display:flex; justify-content:center; gap:0; }
+  .rpt-glance-item{
+    flex:1; max-width:150px; text-align:center; padding:0 14px;
+    border-left:1px solid var(--line);
+  }
+  .rpt-glance-item:first-child{ border-left:none; }
+  .rpt-glance-label{
+    font-size:10px; color:var(--ink-soft); letter-spacing:.08em; margin-bottom:5px;
+  }
+  .rpt-glance-value{
+    font-family:'Noto Serif KR',serif; font-size:14px; font-weight:600; color:var(--ink);
+  }
+
+  /* ---- 섹션 제목 ---- */
+  .rpt-sec-head{
+    display:flex; align-items:center; gap:9px; margin:0 0 8px;
+  }
+  .rpt-badge{
+    width:24px; height:24px; border-radius:50%;
+    background:var(--rosegold); color:#fff;
+    font-family:'Pretendard',sans-serif; font-size:10.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .rpt-sec-title{
+    font-family:'Noto Serif KR',serif; font-size:14.5px; font-weight:600;
+    color:var(--ink); letter-spacing:.01em;
+  }
+
+  /* ---- 표 ---- */
   table.ptable{
-    width:100%; border-collapse:collapse; margin-bottom:6px;
-    page-break-inside:auto;
+    width:100%; border-collapse:separate; border-spacing:0; margin:0;
+    table-layout:fixed;
   }
   table.ptable thead td{
-    background:#E8F1EA; color:#33473C; text-align:left;
-    padding:6px 10px; font-size:11.5px; font-weight:700;
-    border:1px solid #D9E2DC;
+    background:var(--rosegold-deep); color:#fff; text-align:left;
+    padding:7px 12px; font-size:11px; font-weight:700; letter-spacing:.02em;
+    border:1px solid var(--rosegold-deep);
   }
-  table.ptable thead tr td:first-child{ width:34%; }
-  table.ptable thead tr td:last-child{ width:66%; }
-  table.ptable tbody tr{ page-break-inside:avoid; }
+  table.ptable thead tr td:first-child{ border-top-left-radius:9px; }
+  table.ptable thead tr td:last-child{ border-top-right-radius:9px; }
+  table.ptable.vtable-row thead tr td, table.ptable.vtable-row tbody tr td{ width:25%; }
   table.ptable td{
-    border:1px solid #E1E1E1; padding:7px 10px; vertical-align:top; font-size:12px;
+    border-left:1px solid var(--line); border-right:1px solid var(--line); border-bottom:1px solid var(--line);
+    padding:8px 12px; vertical-align:top; font-size:12px;
+    word-break:keep-all; overflow-wrap:break-word;
+    background:var(--white);
   }
-  table.ptable td.c-item{ width:34%; color:#444; }
-  table.ptable td.c-val{ width:66%; word-break:keep-all; }
-  .doc-footer{ text-align:center; color:#999; font-size:10.5px; margin-top:20px; letter-spacing:.05em; }
+  table.ptable.row-block.alt td{ background:var(--ivory); }
+  table.ptable.row-block.first-row td{ border-top:1px solid var(--rosegold-deep); }
+  table.ptable.row-block.first-row td:first-child{ border-top-left-radius:9px; }
+  table.ptable.row-block.first-row td:last-child{ border-top-right-radius:9px; }
+  table.ptable.row-block.last-row td:first-child{ border-bottom-left-radius:9px; }
+  table.ptable.row-block.last-row td:last-child{ border-bottom-right-radius:9px; }
+  table.ptable td.c-item{ width:32%; color:var(--ink-soft); font-weight:600; }
+  table.ptable td.c-val{ width:68%; color:var(--ink); }
+
+  /* ---- 동의 확인 ---- */
+  .rpt-seal{
+    display:flex; align-items:center; gap:10px;
+    background:var(--ivory-deep); border:1px solid var(--rosegold-deep); border-radius:10px;
+    padding:12px 16px;
+  }
+  .rpt-seal-check{
+    width:26px; height:26px; border-radius:50%; flex-shrink:0;
+    background:var(--rosegold); color:#fff; font-size:14px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .rpt-seal-text{ font-size:12px; color:var(--ink); line-height:1.5; }
+
+  /* ---- 마무리 ---- */
+  .rpt-closing{ text-align:center; padding-top:6px; }
+  .rpt-closing-rule{ width:40px; height:1px; background:var(--line); margin:0 auto 12px; }
+  .rpt-closing-text{ font-size:11.5px; color:var(--ink-soft); margin-bottom:6px; }
+  .rpt-closing-brand{
+    font-family:'Noto Serif KR',serif; font-size:11px; letter-spacing:.12em; color:var(--rosegold-deep);
+  }
+
   @media print{
     .print-btn-bar{ display:none; }
     body{ padding:0; }
@@ -1294,19 +1550,27 @@ function buildPrintableTable(){
 </head>
 <body>
   <div class="print-btn-bar"><button onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button></div>
-  <div class="doc-header">
-    <h1>모먼트웍스 축의대 대행 운영 설정서</h1>
-    <div class="meta">${escHtml(groom)} · ${escHtml(bride)} ‖ ${escHtml(wdate)} ${escHtml(wtime)}</div>
+  <div class="rpt-cover" data-gap="0">
+    <div class="rpt-cover-bar"></div>
+    <div class="rpt-eyebrow">MOMENT WORKS</div>
+    <div class="rpt-title">축의대 대행 운영 설정서</div>
+    <div class="rpt-subtitle">${escHtml(groom)} · ${escHtml(bride)} 두 분의 결혼식을 위하여</div>
+    <div class="rpt-divider"></div>
+    <div class="rpt-glance">
+      <div class="rpt-glance-item"><div class="rpt-glance-label">예식일</div><div class="rpt-glance-value">${escHtml(wdate)}</div></div>
+      <div class="rpt-glance-item"><div class="rpt-glance-label">예식 시작시간</div><div class="rpt-glance-value">${escHtml(wtime)}</div></div>
+      <div class="rpt-glance-item"><div class="rpt-glance-label">예식장</div><div class="rpt-glance-value">${escHtml(venue)}</div></div>
+    </div>
   </div>
   ${sectionsHtml}
-  ${vipHtml}
   ${agreeHtml}
+  ${closingHtml}
 </body>
 </html>`;
 }
 
-// 제출(메일 발송)용 표 형태 PDF를 base64로 생성
-// 표(섹션) 단위로 개별 캡처 후 배치 → 페이지 경계에서 표가 잘리지 않도록 처리
+// 제출(메일 발송)용 프리미엄 보고서 형태 PDF를 base64로 생성
+// 행(row) 단위로 개별 캡처 후 배치 → A4 페이지 경계에서 표/항목이 절대 잘리지 않도록 처리
 async function generateSubmissionPdfBase64(){
   const html = buildPrintableTable();
 
@@ -1323,7 +1587,13 @@ async function generateSubmissionPdfBase64(){
     iframe.onload = resolve;
     iframe.srcdoc = html;
   });
-  await new Promise((resolve)=> setTimeout(resolve, 250)); // 폰트/레이아웃 안정화 대기
+  // 폰트(Noto Serif KR / Pretendard) 로딩 및 레이아웃 안정화 대기
+  try{
+    if(iframe.contentDocument.fonts && iframe.contentDocument.fonts.ready){
+      await iframe.contentDocument.fonts.ready;
+    }
+  }catch(e){}
+  await new Promise((resolve)=> setTimeout(resolve, 300));
 
   const idoc = iframe.contentDocument;
   const btnBar = idoc.querySelector('.print-btn-bar');
@@ -1337,14 +1607,13 @@ async function generateSubmissionPdfBase64(){
     const pageHeight = pdf.internal.pageSize.getHeight();
     const marginX = 12;
     const marginTop = 12;
-    const marginBottom = 12;
+    const marginBottom = 14;
     const contentWidth = pageWidth - marginX * 2;
-    const gapMm = 3.5;
 
     let currentY = marginTop;
     let firstBlock = true;
 
-    // 문서를 구성하는 각 블록(제목영역, 섹션 표, VIP 표, 동의 표, 푸터)을 순서대로 개별 캡처
+    // 문서를 구성하는 각 블록(표지, 섹션 제목, 표의 각 행, 동의 확인, 마무리 문구)을 행 단위로 개별 캡처
     const blocks = Array.from(idoc.body.children);
 
     for(const block of blocks){
@@ -1353,26 +1622,45 @@ async function generateSubmissionPdfBase64(){
 
       const canvas = await html2canvas(block, {
         backgroundColor:'#FFFFFF',
-        scale:1.5,
+        scale:2,
         windowWidth: idoc.documentElement.scrollWidth
       });
 
       const imgWidth = contentWidth;
       const imgHeight = canvas.height * imgWidth / canvas.width;
+      const gapMm = block.dataset && block.dataset.gap !== undefined ? parseFloat(block.dataset.gap) : 3.5;
+      // 섹션 제목은 뒤따르는 첫 행과 함께 붙어있어야 하므로, 제목만 페이지 맨 끝에 남지 않도록 여유 공간을 더 확보
+      const isSecHead = block.classList && block.classList.contains('rpt-sec-head');
+      const reserve = isSecHead ? 13 : 0;
 
-      // 현재 페이지에 남은 공간보다 블록이 크면, 표가 중간에서 잘리지 않도록 새 페이지로 이동
-      if(!firstBlock && (currentY + imgHeight > pageHeight - marginBottom)){
+      // 현재 페이지에 남은 공간보다 블록이 크면 새 페이지로 이동 (행 단위 블록이므로 표 중간에서 잘리는 일이 없음)
+      if(!firstBlock && (currentY + gapMm + imgHeight + reserve > pageHeight - marginBottom)){
         pdf.addPage();
         currentY = marginTop;
+      } else if(!firstBlock){
+        currentY += gapMm;
       }
       firstBlock = false;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.82);
+      const imgData = canvas.toDataURL('image/jpeg', 0.88);
       pdf.addImage(imgData, 'JPEG', marginX, currentY, imgWidth, imgHeight);
-      currentY += imgHeight + gapMm;
+      currentY += imgHeight;
+    }
+
+    // 페이지 하단에 브랜드명/페이지 번호 삽입
+    const pageCount = pdf.internal.getNumberOfPages();
+    for(let p=1;p<=pageCount;p++){
+      pdf.setPage(p);
+      pdf.setFont('helvetica','normal');
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(184,145,107); // rosegold
+      pdf.text('MOMENT WORKS', marginX, pageHeight - 7);
+      pdf.setTextColor(140,120,100);
+      pdf.text(`${p} / ${pageCount}`, pageWidth - marginX, pageHeight - 7, { align:'right' });
     }
 
     base64 = pdf.output('datauristring').split(',')[1];
+
 
     // 용량이 너무 크면(약 4.5MB 이상) 서버 전송 실패 위험이 있어 첨부를 생략
     const MAX_PDF_BASE64_LENGTH = 6000000; // base64 약 4.5MB
