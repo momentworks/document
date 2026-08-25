@@ -872,7 +872,7 @@ form.addEventListener('change', (e)=>{
 
 // ---- 계약 패키지 '한측' 선택 시 신랑/신부 세부 선택 및 상대측 항목 비활성화 ----
 const GROOM_SIDE_FIELDS = ['groom_guest_count','groom_side_name','groom_account','ticket_adult_groom','ticket_child_groom','handover_relation_groom','handover_name_groom','handover_phone_groom','handover_report_email_groom','link_receiver_groom'];
-const BRIDE_SIDE_FIELDS = ['bride_guest_count','bride_side_name','bride_account','ticket_adult_bride','ticket_child_bride','info_bride_room','handover_relation_bride','handover_name_bride','handover_phone_bride','handover_report_email_bride','link_receiver_bride'];
+const BRIDE_SIDE_FIELDS = ['bride_guest_count','bride_side_name','bride_account','ticket_adult_bride','ticket_child_bride','handover_relation_bride','handover_name_bride','handover_phone_bride','handover_report_email_bride','link_receiver_bride'];
 
 function applyContractPackageSideToggle(){
   const pkg = form.querySelector('input[name="contract_package"]:checked');
@@ -896,6 +896,22 @@ function applyContractPackageSideToggle(){
   BRIDE_SIDE_FIELDS.forEach(name=>{
     form.querySelectorAll(`[name="${CSS.escape(name)}"]`).forEach(el=>{ el.disabled = disableBride; });
   });
+
+  // 사진 및 영상촬영 - 추가 촬영용 카메라 제공 여부: 계약하지 않은 측이 포함된 선택지 비활성화
+  const ec2 = document.getElementById('ec2'); // 신부 측만 1대 제공
+  const ec3 = document.getElementById('ec3'); // 양측 1대씩 제공
+  const ec1 = document.getElementById('ec1'); // 신랑 측만 1대 제공
+  if(ec1 && ec2 && ec3){
+    ec1.disabled = disableGroom;
+    ec2.disabled = disableBride;
+    ec3.disabled = disableGroom || disableBride;
+    [ec1, ec2, ec3].forEach(el=>{
+      if(el.disabled && el.checked){
+        el.checked = false;
+        applyConditionalGroup('extra_camera');
+      }
+    });
+  }
 }
 
 // ---- progress (칸 단위가 아닌 항목 단위로 집계) ----
