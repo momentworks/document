@@ -438,6 +438,14 @@
         <div class="chip"><input type="radio" name="contract_package" id="cp2" value="양측"><label for="cp2">양측</label></div>
         <div class="chip"><input type="radio" name="contract_package" id="cp3" value="통합"><label for="cp3">통합</label></div>
       </div>
+      <div class="subfield-group" id="contractHalfSideWrap" style="display:none;">
+        <label class="flabel">한측 계약 - 계약 측</label>
+        <div class="choices">
+          <div class="chip"><input type="radio" name="contract_half_side" id="chs1" value="신랑"><label for="chs1">신랑측</label></div>
+          <div class="chip"><input type="radio" name="contract_half_side" id="chs2" value="신부"><label for="chs2">신부측</label></div>
+        </div>
+        <div class="sec-note" style="margin:8px 0 0 0;">계약하지 않은 측의 입력 항목은 자동으로 비활성화됩니다.</div>
+      </div>
     </div>
     <div class="row2">
       <div class="field"><label class="flabel">예식일</label><input type="date" name="wedding_date"></div>
@@ -857,10 +865,40 @@ function applyConditionalGroup(name){
 }
 function applyAllConditionalGroups(){
   Object.keys(CONDITIONAL_GROUPS).forEach(applyConditionalGroup);
+  applyContractPackageSideToggle();
 }
 form.addEventListener('change', (e)=>{
   if(e.target && e.target.type === 'radio' && CONDITIONAL_GROUPS[e.target.name]) applyConditionalGroup(e.target.name);
+  if(e.target && e.target.type === 'radio' && (e.target.name === 'contract_package' || e.target.name === 'contract_half_side')) applyContractPackageSideToggle();
 });
+
+// ---- 계약 패키지 '한측' 선택 시 신랑/신부 세부 선택 및 상대측 항목 비활성화 ----
+const GROOM_SIDE_FIELDS = ['groom_guest_count','groom_side_name','groom_account','ticket_adult_groom','ticket_child_groom','handover_relation_groom','handover_name_groom','handover_phone_groom','handover_report_email_groom','link_receiver_groom'];
+const BRIDE_SIDE_FIELDS = ['bride_guest_count','bride_side_name','bride_account','ticket_adult_bride','ticket_child_bride','info_bride_room','handover_relation_bride','handover_name_bride','handover_phone_bride','handover_report_email_bride','link_receiver_bride'];
+
+function applyContractPackageSideToggle(){
+  const pkg = form.querySelector('input[name="contract_package"]:checked');
+  const isHalf = !!(pkg && pkg.value === '한측');
+
+  const subWrap = document.getElementById('contractHalfSideWrap');
+  if(subWrap){
+    subWrap.style.display = isHalf ? '' : 'none';
+    if(!isHalf){
+      form.querySelectorAll('input[name="contract_half_side"]').forEach(el=>{ el.checked = false; });
+    }
+  }
+
+  const side = isHalf ? form.querySelector('input[name="contract_half_side"]:checked') : null;
+  const disableGroom = isHalf && side && side.value === '신부';
+  const disableBride = isHalf && side && side.value === '신랑';
+
+  GROOM_SIDE_FIELDS.forEach(name=>{
+    form.querySelectorAll(`[name="${CSS.escape(name)}"]`).forEach(el=>{ el.disabled = disableGroom; });
+  });
+  BRIDE_SIDE_FIELDS.forEach(name=>{
+    form.querySelectorAll(`[name="${CSS.escape(name)}"]`).forEach(el=>{ el.disabled = disableBride; });
+  });
+}
 
 // ---- progress (칸 단위가 아닌 항목 단위로 집계) ----
 function isFieldItemFilled(item){
@@ -914,7 +952,7 @@ document.getElementById('addVipRow').addEventListener('click', ()=>{
 // ---- build summary ----
 function label(name){
   const map = {
-    groom_name:'신랑 성함', bride_name:'신부 성함', contract_package:'계약 패키지', wedding_date:'예식일', wedding_time:'예식 시작시간',
+    groom_name:'신랑 성함', bride_name:'신부 성함', contract_package:'계약 패키지', contract_half_side:'한측 계약 - 계약 측', wedding_date:'예식일', wedding_time:'예식 시작시간',
     venue_name:'예식장명', venue_region:'지역', hall_name:'홀 이름', groom_guest_count:'신랑측 예상 하객 수', bride_guest_count:'신부측 예상 하객 수',
     groom_side_name:'[신랑측] 혼주 성함', bride_side_name:'[신부측] 혼주 성함',
     relation_type:'관계 설정', relation_type_etc:'관계 설정(기타)',
@@ -947,7 +985,7 @@ function label(name){
 }
 
 const SECTIONS = [
-  ['01. 예식 기본정보',['groom_name','bride_name','contract_package','wedding_date','wedding_time','venue_region','venue_name','hall_name','groom_guest_count','bride_guest_count']],
+  ['01. 예식 기본정보',['groom_name','bride_name','contract_package','contract_half_side','wedding_date','wedding_time','venue_region','venue_name','hall_name','groom_guest_count','bride_guest_count']],
   ['02. 양가 정보',['groom_side_name','bride_side_name']],
   ['03. 관계 설정',['relation_type','relation_type_etc']],
   ['04. 축의금 정리방식',['money_op','transfer_yn','groom_account','bride_account','refund_way','refund_way_etc']],
