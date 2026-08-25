@@ -1120,61 +1120,25 @@ function base64ToUtf8(b64){ return new TextDecoder().decode(base64ToBytes(b64));
 const PDF_DATA_MARKER_START = '--MW-DATA-START--';
 const PDF_DATA_MARKER_END = '--MW-DATA-END--';
 
-// PDF 마지막 페이지에 작성 데이터를 텍스트로 삽입 → 나중에 이 PDF를 업로드하면 그대로 복원 가능
-function embedRestoreDataPage(pdf, jsonString){
+// PDF의 화면에 보이지 않는 문서 속성(메타데이터)에 작성 데이터를 삽입 → 인쇄/열람 시 전혀 노출되지 않음
+function embedRestoreDataMeta(pdf, jsonString){
   const b64 = utf8ToBase64(jsonString);
-  pdf.addPage();
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const marginX = 12;
-  const maxWidth = pageWidth - marginX * 2;
-
-  pdf.setFont('helvetica','normal');
-  pdf.setFontSize(9);
-  pdf.setTextColor(140,120,100);
-  pdf.text('MOMENT WORKS - Restore Data Page', marginX, 15);
-  pdf.setFontSize(7.5);
-  pdf.setTextColor(160,160,160);
-  pdf.text('Do not delete this page. To edit this submission later, upload this exact PDF file', marginX, 21);
-  pdf.text('using the "PDF" import button on the form website to restore everything you entered.', marginX, 26);
-
-  pdf.setFont('courier','normal');
-  pdf.setFontSize(6);
-  pdf.setTextColor(190,190,190);
-
-  // 페이지 폭에 맞춰 한 줄에 들어갈 문자 수를 실측으로 계산
-  let lineLen = 100;
-  while(lineLen > 10 && pdf.getTextWidth('0'.repeat(lineLen)) > maxWidth){ lineLen -= 5; }
-
-  const lines = [PDF_DATA_MARKER_START];
-  for(let i=0;i<b64.length;i+=lineLen){ lines.push(b64.slice(i, i+lineLen)); }
-  lines.push(PDF_DATA_MARKER_END);
-
-  let y = 34;
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  lines.forEach(line=>{
-    if(y > pageHeight - 12){ pdf.addPage(); y = 15; }
-    pdf.text(line, marginX, y);
-    y += 3.1;
-  });
+  pdf.setProperties({ keywords: PDF_DATA_MARKER_START + b64 + PDF_DATA_MARKER_END });
 }
 
-// PDF 파일(ArrayBuffer)에서 삽입해둔 복원 데이터를 추출해 JSON 객체로 반환
+// PDF 파일(ArrayBuffer)의 문서 속성(메타데이터)에서 삽입해둔 복원 데이터를 추출해 JSON 객체로 반환
 async function extractRestoreDataFromPdf(arrayBuffer){
   if(!window.pdfjsLib) throw new Error('PDF 분석 라이브러리를 불러오지 못했습니다.');
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   const doc = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let fullText = '';
-  for(let i=1;i<=doc.numPages;i++){
-    const page = await doc.getPage(i);
-    const content = await page.getTextContent();
-    fullText += content.items.map(it=>it.str).join('\n') + '\n';
-  }
-  const startIdx = fullText.indexOf(PDF_DATA_MARKER_START);
-  const endIdx = fullText.indexOf(PDF_DATA_MARKER_END);
+  const meta = await doc.getMetadata();
+  const keywords = (meta.info && meta.info.Keywords) || '';
+  const startIdx = keywords.indexOf(PDF_DATA_MARKER_START);
+  const endIdx = keywords.indexOf(PDF_DATA_MARKER_END);
   if(startIdx === -1 || endIdx === -1 || endIdx < startIdx){
     throw new Error('이 PDF에서는 복원 데이터를 찾을 수 없습니다. 모먼트웍스 설정서에서 생성된 PDF가 맞는지 확인해 주세요.');
   }
-  const b64 = fullText.slice(startIdx + PDF_DATA_MARKER_START.length, endIdx).replace(/\s+/g, '');
+  const b64 = keywords.slice(startIdx + PDF_DATA_MARKER_START.length, endIdx).replace(/\s+/g, '');
   const jsonString = base64ToUtf8(b64);
   return JSON.parse(jsonString);
 }
@@ -1559,15 +1523,261 @@ document.getElementById('saveXlsxBtn').addEventListener('click', ()=>{
   }
 });
 
-// ---- PDF-friendly printable table view ----
-function escHtml(str){
-  return String(str == null ? '' : str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ---- PDF 텍스트 기반 렌더링 (한글 폰트를 내장해 복사/검색 가능한 실제 텍스트로 생성) ----
+const PDF_FONT_URLS = {
+  regular: './fonts/Pretendard-Regular.ttf',
+  bold: './fonts/Pretendard-Bold.ttf'
+};
+let _pdfFontCache = null;
+async function loadPdfFonts(){
+  if(_pdfFontCache) return _pdfFontCache;
+  const [regRes, boldRes] = await Promise.all([
+    fetch(PDF_FONT_URLS.regular),
+    fetch(PDF_FONT_URLS.bold)
+  ]);
+  if(!regRes.ok || !boldRes.ok) throw new Error('PDF 생성용 한글 폰트를 불러오지 못했습니다.');
+  const [regBuf, boldBuf] = await Promise.all([regRes.arrayBuffer(), boldRes.arrayBuffer()]);
+  _pdfFontCache = {
+    regular: bytesToBase64(new Uint8Array(regBuf)),
+    bold: bytesToBase64(new Uint8Array(boldBuf))
+  };
+  return _pdfFontCache;
 }
 
-function buildPrintableTable(){
-  const fd = new FormData(form);
+const PDF_COLORS = {
+  ivory: [250,246,240], ivoryDeep: [243,235,224], ink: [58,46,38], inkSoft: [111,96,85],
+  rosegold: [184,145,107], rosegoldDeep: [156,117,80], blush: [227,185,180], line: [230,220,203], white: [255,255,255]
+};
 
+// 제출(메일 발송)용 프리미엄 보고서 형태 PDF를 base64로 생성
+// 실제 텍스트(내장 폰트)로 그리기 때문에 PDF에서 글자를 그대로 선택/복사할 수 있고, 이미지 방식보다 용량도 훨씬 작음
+async function generateSubmissionPdfBase64(){
+  const fonts = await loadPdfFonts();
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4', compress:true });
+  pdf.addFileToVFS('Pretendard-Regular.ttf', fonts.regular);
+  pdf.addFont('Pretendard-Regular.ttf', 'Pretendard', 'normal');
+  pdf.addFileToVFS('Pretendard-Bold.ttf', fonts.bold);
+  pdf.addFont('Pretendard-Bold.ttf', 'Pretendard', 'bold');
+  pdf.setFont('Pretendard', 'normal');
+
+  const ctx = {
+    pageWidth: pdf.internal.pageSize.getWidth(),
+    pageHeight: pdf.internal.pageSize.getHeight(),
+    marginX: 14, marginTop: 14, marginBottom: 16,
+    y: 14
+  };
+  ctx.contentWidth = ctx.pageWidth - ctx.marginX * 2;
+
+  function ensureSpace(neededHeight){
+    if(ctx.y + neededHeight > ctx.pageHeight - ctx.marginBottom){
+      pdf.addPage();
+      ctx.y = ctx.marginTop;
+      return true;
+    }
+    return false;
+  }
+
+  function drawCover(groom, bride, wdate, wtime, venue){
+    const barH = 4.5;
+    const steps = 80;
+    for(let i=0;i<steps;i++){
+      const t = i/(steps-1);
+      const r = Math.round(PDF_COLORS.rosegold[0] + (PDF_COLORS.blush[0]-PDF_COLORS.rosegold[0])*t);
+      const g = Math.round(PDF_COLORS.rosegold[1] + (PDF_COLORS.blush[1]-PDF_COLORS.rosegold[1])*t);
+      const b = Math.round(PDF_COLORS.rosegold[2] + (PDF_COLORS.blush[2]-PDF_COLORS.rosegold[2])*t);
+      pdf.setFillColor(r,g,b);
+      pdf.rect(ctx.marginX + (ctx.contentWidth/steps)*i, ctx.y, ctx.contentWidth/steps + 0.6, barH, 'F');
+    }
+    ctx.y += barH + 9;
+
+    pdf.setFont('Pretendard','bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor(...PDF_COLORS.rosegoldDeep);
+    pdf.text('M O M E N T   W O R K S', ctx.pageWidth/2, ctx.y, {align:'center'});
+    ctx.y += 9;
+
+    pdf.setFontSize(21);
+    pdf.setTextColor(...PDF_COLORS.ink);
+    pdf.text('축의대 대행 운영 설정서', ctx.pageWidth/2, ctx.y, {align:'center'});
+    ctx.y += 8;
+
+    pdf.setFont('Pretendard','normal');
+    pdf.setFontSize(11);
+    pdf.setTextColor(...PDF_COLORS.inkSoft);
+    pdf.text(`${groom} · ${bride} 두 분의 결혼식을 위하여`, ctx.pageWidth/2, ctx.y, {align:'center'});
+    ctx.y += 9;
+
+    pdf.setDrawColor(...PDF_COLORS.rosegold);
+    pdf.setLineWidth(0.6);
+    pdf.line(ctx.pageWidth/2 - 11, ctx.y, ctx.pageWidth/2 + 11, ctx.y);
+    ctx.y += 9;
+
+    const items = [['예식일', wdate||'(미입력)'], ['예식 시작시간', wtime||'(미입력)'], ['예식장', venue||'(미입력)']];
+    const colW = ctx.contentWidth/3;
+    items.forEach((it, i)=>{
+      const cx = ctx.marginX + colW*i + colW/2;
+      if(i>0){
+        pdf.setDrawColor(...PDF_COLORS.line);
+        pdf.setLineWidth(0.3);
+        pdf.line(ctx.marginX + colW*i, ctx.y - 5, ctx.marginX + colW*i, ctx.y + 3.5);
+      }
+      pdf.setFont('Pretendard','normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(...PDF_COLORS.inkSoft);
+      pdf.text(it[0], cx, ctx.y, {align:'center'});
+      pdf.setFont('Pretendard','bold');
+      pdf.setFontSize(10.5);
+      pdf.setTextColor(...PDF_COLORS.ink);
+      pdf.text(it[1], cx, ctx.y + 5.5, {align:'center'});
+    });
+    ctx.y += 11;
+
+    pdf.setDrawColor(...PDF_COLORS.rosegoldDeep);
+    pdf.setLineWidth(0.5);
+    pdf.line(ctx.marginX, ctx.y, ctx.pageWidth-ctx.marginX, ctx.y);
+    ctx.y += 9;
+  }
+
+  function drawSectionHead(num, title, gapBefore){
+    ensureSpace(14 + gapBefore);
+    ctx.y += gapBefore;
+    const cy = ctx.y + 2.6;
+    if(num){
+      pdf.setFillColor(...PDF_COLORS.rosegold);
+      pdf.circle(ctx.marginX + 3.2, cy, 3.4, 'F');
+      pdf.setFont('Pretendard','bold');
+      pdf.setFontSize(8);
+      pdf.setTextColor(255,255,255);
+      pdf.text(num, ctx.marginX + 3.2, cy + 1.1, {align:'center'});
+    }
+    pdf.setFont('Pretendard','bold');
+    pdf.setFontSize(12.5);
+    pdf.setTextColor(...PDF_COLORS.ink);
+    pdf.text(title, ctx.marginX + (num? 9.5:0), cy + 1.4);
+    ctx.y += 9.5;
+  }
+
+  let rowIndex = 0;
+  function drawKVRow(labelText, valueText){
+    const padding = 2.6;
+    const lineHeight = 4.1;
+    const labelW = ctx.contentWidth*0.32;
+    const valueW = ctx.contentWidth*0.68;
+    pdf.setFont('Pretendard','normal');
+    pdf.setFontSize(9.5);
+    const labelLines = pdf.splitTextToSize(labelText, labelW - padding*2);
+    const valueLines = pdf.splitTextToSize(String(valueText), valueW - padding*2);
+    const lines = Math.max(labelLines.length, valueLines.length, 1);
+    const height = Math.max(lines*lineHeight + padding*1.6, 8.5);
+
+    const brokeToNewPage = ensureSpace(height);
+    if(brokeToNewPage) rowIndex = 0;
+
+    const alt = rowIndex % 2 === 1;
+    pdf.setFillColor(...(alt ? PDF_COLORS.ivory : PDF_COLORS.white));
+    pdf.rect(ctx.marginX, ctx.y, ctx.contentWidth, height, 'F');
+
+    pdf.setFont('Pretendard','normal');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(...PDF_COLORS.inkSoft);
+    const textY0 = ctx.y + padding + 2.6;
+    labelLines.forEach((l,i)=> pdf.text(l, ctx.marginX + padding, textY0 + i*lineHeight));
+    pdf.setTextColor(...PDF_COLORS.ink);
+    valueLines.forEach((l,i)=> pdf.text(l, ctx.marginX + labelW + padding, textY0 + i*lineHeight));
+
+    ctx.y += height;
+    rowIndex++;
+  }
+
+  function drawTableHeader(cols){
+    const h = 7.5;
+    ensureSpace(h);
+    pdf.setFillColor(...PDF_COLORS.rosegoldDeep);
+    pdf.rect(ctx.marginX, ctx.y, ctx.contentWidth, h, 'F');
+    pdf.setFont('Pretendard','bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(255,255,255);
+    let cx = ctx.marginX + 3;
+    cols.forEach(c=>{
+      pdf.text(c.label, cx, ctx.y + 5);
+      cx += c.width;
+    });
+    ctx.y += h;
+    rowIndex = 0;
+  }
+
+  function drawGridRow(values, widths){
+    const h = 7.5;
+    ensureSpace(h);
+    const alt = rowIndex % 2 === 1;
+    pdf.setFillColor(...(alt ? PDF_COLORS.ivory : PDF_COLORS.white));
+    pdf.rect(ctx.marginX, ctx.y, ctx.contentWidth, h, 'F');
+    pdf.setFont('Pretendard','normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(...PDF_COLORS.ink);
+    let cx = ctx.marginX + 3;
+    values.forEach((v,i)=>{
+      pdf.text(String(v), cx, ctx.y + 5);
+      cx += widths[i];
+    });
+    ctx.y += h;
+    rowIndex++;
+  }
+
+  function endTable(){
+    pdf.setDrawColor(...PDF_COLORS.rosegoldDeep);
+    pdf.setLineWidth(0.4);
+    pdf.line(ctx.marginX, ctx.y, ctx.marginX + ctx.contentWidth, ctx.y);
+    ctx.y += 0.2;
+  }
+
+  function drawSeal(agreed){
+    ctx.y += 7;
+    const sealH = 12;
+    ensureSpace(sealH);
+    pdf.setFillColor(...PDF_COLORS.ivoryDeep);
+    pdf.setDrawColor(...PDF_COLORS.rosegoldDeep);
+    pdf.setLineWidth(0.4);
+    pdf.rect(ctx.marginX, ctx.y, ctx.contentWidth, sealH, 'FD');
+    const cy = ctx.y + sealH/2;
+    pdf.setFillColor(...PDF_COLORS.rosegold);
+    pdf.circle(ctx.marginX + 8, cy, 3.6, 'F');
+    pdf.setDrawColor(255,255,255);
+    pdf.setLineWidth(0.6);
+    if(agreed){
+      pdf.line(ctx.marginX + 6.2, cy, ctx.marginX + 7.5, cy + 1.5);
+      pdf.line(ctx.marginX + 7.5, cy + 1.5, ctx.marginX + 10.2, cy - 1.8);
+    }
+    pdf.setFont('Pretendard','normal');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor(...PDF_COLORS.ink);
+    const sealText = agreed
+      ? '위 내용은 사실과 다름없으며, 원활한 서비스 제공을 위해 작성하였습니다.'
+      : '동의 미확인';
+    pdf.text(sealText, ctx.marginX + 15, cy + 1.3);
+    ctx.y += sealH + 10;
+  }
+
+  function drawClosing(){
+    ensureSpace(14);
+    pdf.setDrawColor(...PDF_COLORS.line);
+    pdf.setLineWidth(0.3);
+    pdf.line(ctx.pageWidth/2-8, ctx.y, ctx.pageWidth/2+8, ctx.y);
+    ctx.y += 6;
+    pdf.setFont('Pretendard','normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(...PDF_COLORS.inkSoft);
+    pdf.text('작성해 주셔서 감사합니다. 소중한 하루를 정성껏 준비하겠습니다.', ctx.pageWidth/2, ctx.y, {align:'center'});
+    ctx.y += 5;
+    pdf.setFont('Pretendard','bold');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(...PDF_COLORS.rosegoldDeep);
+    pdf.text('MOMENT WORKS · Managing Meaningful Moments', ctx.pageWidth/2, ctx.y, {align:'center'});
+  }
+
+  // ==== 데이터 수집 및 렌더링 ====
+  const fd = new FormData(form);
   const g = (name)=> (fd.get(name) || '').toString().trim();
   const groom = g('groom_name') || '(미입력)';
   const bride = g('bride_name') || '(미입력)';
@@ -1575,50 +1785,39 @@ function buildPrintableTable(){
   const wtime = g('wedding_time') || '(미입력)';
   const venue = g('venue_name') || '(미입력)';
 
-  // 각 행(row)을 개별 블록으로 렌더링 → PDF 변환 시 표가 페이지 경계에서 잘리지 않도록 함
-  let rowCounter = 0;
-  function dataRowHtml(k, v, opts){
-    const alt = (rowCounter++ % 2 === 1) ? ' alt' : '';
-    const pos = (opts && opts.first ? ' first-row' : '') + (opts && opts.last ? ' last-row' : '');
-    return `<table class="ptable row-block${alt}${pos}" data-gap="0"><tbody><tr><td class="c-item">${escHtml(k)}</td><td class="c-val">${escHtml(v)}</td></tr></tbody></table>`;
-  }
-  function vipHeaderRowHtml(gap){
-    return `<table class="ptable row-block vtable-row first-row" data-gap="${gap}"><thead><tr><td>성함(업체명)</td><td>관계</td><td>연락처</td><td>지급 식권 수량</td></tr></thead></table>`;
-  }
-  function vipRowHtml(a,b,c,d,opts){
-    const alt = (rowCounter++ % 2 === 1) ? ' alt' : '';
-    const pos = (opts && opts.last ? ' last-row' : '');
-    return `<table class="ptable row-block vtable-row${alt}${pos}" data-gap="0"><tbody><tr><td>${escHtml(a)}</td><td>${escHtml(b)}</td><td>${escHtml(c)}</td><td>${escHtml(d)}</td></tr></tbody></table>`;
-  }
-  function secHeadHtml(num, title, gap){
-    rowCounter = 0;
-    const badge = num ? `<span class="rpt-badge">${escHtml(num)}</span>` : '';
-    return `<div class="rpt-sec-head" data-gap="${gap}">${badge}<span class="rpt-sec-title">${escHtml(title)}</span></div>`;
-  }
+  drawCover(groom, bride, wdate, wtime, venue);
 
-  // VIP 명단(08)을 07 하객 안내사항과 09 축의금 인계 사이, 번호 순서에 맞춰 배치
-  const vipYn = fd.get('vip_yn') || '';
-  const names = fd.getAll('vip_name[]'), rel = fd.getAll('vip_relation[]'), con = fd.getAll('vip_contact[]'), memo = fd.getAll('vip_memo[]');
-  const vipEntries = [];
-  for(let i=0;i<names.length;i++){
-    if(names[i] || rel[i] || con[i] || memo[i]){
-      vipEntries.push([names[i]||'(이름 미입력)', rel[i]||'-', con[i]||'-', memo[i]||'-']);
-    }
-  }
-  function buildVipHtml(gap){
-    let h = secHeadHtml('08', 'VIP 명단', gap);
-    if(vipYn){
-      h += dataRowHtml('VIP 명단 작성 여부', vipYn, { first:true, last: vipEntries.length===0 });
-    }
-    if(vipEntries.length){
-      h += vipHeaderRowHtml(vipYn ? 4 : 0);
-      vipEntries.forEach(([a,b,c,d], i)=>{ h += vipRowHtml(a,b,c,d, { last: i===vipEntries.length-1 }); });
-    }
-    return h;
-  }
-
-  let sectionsHtml = '';
   let firstSection = true;
+  function num_after(title){ const m = /^(\d{2})\./.exec(title); return m ? m[1] : ''; }
+
+  const vipYn = fd.get('vip_yn') || '';
+  const vipNamesArr = fd.getAll('vip_name[]'), vipRelArr = fd.getAll('vip_relation[]'), vipConArr = fd.getAll('vip_contact[]'), vipMemoArr = fd.getAll('vip_memo[]');
+  const vipEntries = [];
+  for(let i=0;i<vipNamesArr.length;i++){
+    if(vipNamesArr[i] || vipRelArr[i] || vipConArr[i] || vipMemoArr[i]){
+      vipEntries.push([vipNamesArr[i]||'(이름 미입력)', vipRelArr[i]||'-', vipConArr[i]||'-', vipMemoArr[i]||'-']);
+    }
+  }
+  function drawVipBlock(){
+    drawSectionHead('08', 'VIP 명단', firstSection ? 0 : 7);
+    rowIndex = 0;
+    if(vipYn) drawKVRow('VIP 명단 작성 여부', vipYn);
+    if(vipYn) endTable();
+    if(vipEntries.length){
+      const widths = [ctx.contentWidth*0.28, ctx.contentWidth*0.20, ctx.contentWidth*0.26, ctx.contentWidth*0.26];
+      drawTableHeader([
+        {label:'성함(업체명)', width: widths[0]},
+        {label:'관계', width: widths[1]},
+        {label:'연락처', width: widths[2]},
+        {label:'지급 식권 수량', width: widths[3]}
+      ]);
+      vipEntries.forEach(entry=> drawGridRow(entry, widths));
+      endTable();
+    }
+    firstSection = false;
+  }
+  let vipDrawn = false;
+
   SECTIONS.forEach(([title, keys])=>{
     const rowsData = [];
     keys.forEach(k=>{
@@ -1629,305 +1828,55 @@ function buildPrintableTable(){
     if(rowsData.length){
       const m = /^(\d{2})\.\s*(.+)$/.exec(title);
       const num = m ? m[1] : '';
-      sectionsHtml += secHeadHtml(num, m ? m[2] : title, firstSection ? 0 : 7);
-      rowsData.forEach(([k,v], i)=>{
-        sectionsHtml += dataRowHtml(k, v, { first: i===0, last: i===rowsData.length-1 });
-      });
+      drawSectionHead(num, m ? m[2] : title, firstSection ? 0 : 7);
+      rowIndex = 0;
+      rowsData.forEach(([k,v])=> drawKVRow(k, v));
+      endTable();
       firstSection = false;
     }
-    // 07번 섹션 직후, 09번 섹션 직전에 VIP 명단(08) 삽입
-    if(num_after(title) === '07' && (vipYn || vipEntries.length)){
-      sectionsHtml += buildVipHtml(firstSection ? 0 : 7);
-      firstSection = false;
+    if(num_after(title) === '07' && (vipYn || vipEntries.length) && !vipDrawn){
+      drawVipBlock();
+      vipDrawn = true;
     }
   });
-  function num_after(title){ const m = /^(\d{2})\./.exec(title); return m ? m[1] : ''; }
-
-  // 혹시 07번 섹션 자체가 비어 있어 위에서 VIP가 삽입되지 못한 경우를 대비한 안전장치
-  if((vipYn || vipEntries.length) && !sectionsHtml.includes('VIP 명단')){
-    sectionsHtml += buildVipHtml(firstSection ? 0 : 7);
-    firstSection = false;
+  if((vipYn || vipEntries.length) && !vipDrawn){
+    drawVipBlock();
   }
 
-  const agreeHtml = fd.get('final_agree') !== null
-    ? `<div class="rpt-seal" data-gap="7">
-        <span class="rpt-seal-check">${fd.get('final_agree') ? '✓' : '·'}</span>
-        <span class="rpt-seal-text">${fd.get('final_agree') ? '위 내용은 사실과 다름없으며, 원활한 서비스 제공을 위해 작성하였습니다.' : '동의 미확인'}</span>
-      </div>`
-    : '';
+  drawSeal(!!fd.get('final_agree'));
+  drawClosing();
 
-  const closingHtml = `
-    <div class="rpt-closing" data-gap="10">
-      <div class="rpt-closing-rule"></div>
-      <div class="rpt-closing-text">작성해 주셔서 감사합니다. 소중한 하루를 정성껏 준비하겠습니다.</div>
-      <div class="rpt-closing-brand">MOMENT WORKS · Managing Meaningful Moments</div>
-    </div>`;
-
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>모먼트웍스_축의대_대행_운영_설정서</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ivory:#FAF6F0; --ivory-deep:#F3EBE0; --ink:#3A2E26; --ink-soft:#6F6055;
-    --rosegold:#B8916B; --rosegold-deep:#9C7550; --blush:#E3B9B4; --line:#E6DCCB; --white:#FFFFFF;
-  }
-  @page{ size:A4; margin:16mm 14mm; }
-  *{ box-sizing:border-box; }
-  body{
-    font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
-    color:var(--ink); margin:0; padding:0; font-size:12px; line-height:1.55;
-    background:var(--white);
-  }
-  .print-btn-bar{ text-align:center; margin-bottom:16px; }
-  .print-btn-bar button{
-    background:var(--rosegold); color:#fff; border:none; border-radius:8px;
-    padding:10px 22px; font-size:13px; font-weight:600; cursor:pointer;
+  // 페이지 하단에 브랜드명/페이지 번호 삽입
+  const pageCount = pdf.internal.getNumberOfPages();
+  for(let p=1;p<=pageCount;p++){
+    pdf.setPage(p);
+    pdf.setFont('Pretendard','normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(...PDF_COLORS.rosegold);
+    pdf.text('MOMENT WORKS', ctx.marginX, ctx.pageHeight - 8);
+    pdf.setTextColor(...PDF_COLORS.inkSoft);
+    pdf.text(`${p} / ${pageCount}`, ctx.pageWidth - ctx.marginX, ctx.pageHeight - 8, { align:'right' });
   }
 
-  /* ---- 표지 ---- */
-  .rpt-cover{
-    padding:0 0 18px;
-    margin-bottom:4px;
-    border-bottom:2px solid var(--rosegold-deep);
-  }
-  .rpt-cover-bar{
-    height:6px; width:100%;
-    background:linear-gradient(90deg,var(--rosegold),var(--blush));
-    margin-bottom:22px;
-  }
-  .rpt-eyebrow{
-    text-align:center; font-size:11px; letter-spacing:.28em; font-weight:700;
-    color:var(--rosegold-deep); margin-bottom:10px;
-  }
-  .rpt-title{
-    text-align:center; font-family:'Noto Serif KR',serif; font-weight:700;
-    font-size:25px; color:var(--ink); margin:0 0 8px;
-  }
-  .rpt-subtitle{
-    text-align:center; font-family:'Noto Serif KR',serif; font-style:italic;
-    font-size:13px; color:var(--ink-soft); margin:0 0 16px;
-  }
-  .rpt-divider{ width:56px; height:2px; background:var(--rosegold); margin:0 auto 18px; }
-  .rpt-glance{ display:flex; justify-content:center; gap:0; }
-  .rpt-glance-item{
-    flex:1; max-width:150px; text-align:center; padding:0 14px;
-    border-left:1px solid var(--line);
-  }
-  .rpt-glance-item:first-child{ border-left:none; }
-  .rpt-glance-label{
-    font-size:10px; color:var(--ink-soft); letter-spacing:.08em; margin-bottom:5px;
-  }
-  .rpt-glance-value{
-    font-family:'Noto Serif KR',serif; font-size:14px; font-weight:600; color:var(--ink);
-  }
-
-  /* ---- 섹션 제목 ---- */
-  .rpt-sec-head{
-    display:flex; align-items:center; gap:9px; margin:0 0 8px;
-  }
-  .rpt-badge{
-    width:24px; height:24px; border-radius:50%;
-    background:var(--rosegold); color:#fff;
-    font-family:'Pretendard',sans-serif; font-size:10.5px; font-weight:700;
-    display:flex; align-items:center; justify-content:center; flex-shrink:0;
-  }
-  .rpt-sec-title{
-    font-family:'Noto Serif KR',serif; font-size:14.5px; font-weight:600;
-    color:var(--ink); letter-spacing:.01em;
-  }
-
-  /* ---- 표 ---- */
-  table.ptable{
-    width:100%; border-collapse:separate; border-spacing:0; margin:0;
-    table-layout:fixed;
-  }
-  table.ptable thead td{
-    background:var(--rosegold-deep); color:#fff; text-align:left;
-    padding:7px 12px; font-size:11px; font-weight:700; letter-spacing:.02em;
-    border:1px solid var(--rosegold-deep);
-  }
-  table.ptable thead tr td:first-child{ border-top-left-radius:9px; }
-  table.ptable thead tr td:last-child{ border-top-right-radius:9px; }
-  table.ptable.vtable-row thead tr td, table.ptable.vtable-row tbody tr td{ width:25%; }
-  table.ptable td{
-    border-left:1px solid var(--line); border-right:1px solid var(--line); border-bottom:1px solid var(--line);
-    padding:8px 12px; vertical-align:top; font-size:12px;
-    word-break:keep-all; overflow-wrap:break-word;
-    background:var(--white);
-  }
-  table.ptable.row-block.alt td{ background:var(--ivory); }
-  table.ptable.row-block.first-row td{ border-top:1px solid var(--rosegold-deep); }
-  table.ptable.row-block.first-row td:first-child{ border-top-left-radius:9px; }
-  table.ptable.row-block.first-row td:last-child{ border-top-right-radius:9px; }
-  table.ptable.row-block.last-row td:first-child{ border-bottom-left-radius:9px; }
-  table.ptable.row-block.last-row td:last-child{ border-bottom-right-radius:9px; }
-  table.ptable td.c-item{ width:32%; color:var(--ink-soft); font-weight:600; }
-  table.ptable td.c-val{ width:68%; color:var(--ink); }
-
-  /* ---- 동의 확인 ---- */
-  .rpt-seal{
-    display:flex; align-items:center; gap:10px;
-    background:var(--ivory-deep); border:1px solid var(--rosegold-deep); border-radius:10px;
-    padding:12px 16px;
-  }
-  .rpt-seal-check{
-    width:26px; height:26px; border-radius:50%; flex-shrink:0;
-    background:var(--rosegold); color:#fff; font-size:14px; font-weight:700;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .rpt-seal-text{ font-size:12px; color:var(--ink); line-height:1.5; }
-
-  /* ---- 마무리 ---- */
-  .rpt-closing{ text-align:center; padding-top:6px; }
-  .rpt-closing-rule{ width:40px; height:1px; background:var(--line); margin:0 auto 12px; }
-  .rpt-closing-text{ font-size:11.5px; color:var(--ink-soft); margin-bottom:6px; }
-  .rpt-closing-brand{
-    font-family:'Noto Serif KR',serif; font-size:11px; letter-spacing:.12em; color:var(--rosegold-deep);
-  }
-
-  @media print{
-    .print-btn-bar{ display:none; }
-    body{ padding:0; }
-  }
-</style>
-</head>
-<body>
-  <div class="print-btn-bar"><button onclick="window.print()">🖨️ 인쇄 / PDF로 저장</button></div>
-  <div class="rpt-cover" data-gap="0">
-    <div class="rpt-cover-bar"></div>
-    <div class="rpt-eyebrow">MOMENT WORKS</div>
-    <div class="rpt-title">축의대 대행 운영 설정서</div>
-    <div class="rpt-subtitle">${escHtml(groom)} · ${escHtml(bride)} 두 분의 결혼식을 위하여</div>
-    <div class="rpt-divider"></div>
-    <div class="rpt-glance">
-      <div class="rpt-glance-item"><div class="rpt-glance-label">예식일</div><div class="rpt-glance-value">${escHtml(wdate)}</div></div>
-      <div class="rpt-glance-item"><div class="rpt-glance-label">예식 시작시간</div><div class="rpt-glance-value">${escHtml(wtime)}</div></div>
-      <div class="rpt-glance-item"><div class="rpt-glance-label">예식장</div><div class="rpt-glance-value">${escHtml(venue)}</div></div>
-    </div>
-  </div>
-  ${sectionsHtml}
-  ${agreeHtml}
-  ${closingHtml}
-</body>
-</html>`;
-}
-
-// 제출(메일 발송)용 프리미엄 보고서 형태 PDF를 base64로 생성
-// 행(row) 단위로 개별 캡처 후 배치 → A4 페이지 경계에서 표/항목이 절대 잘리지 않도록 처리
-async function generateSubmissionPdfBase64(){
-  const html = buildPrintableTable();
-
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.left = '-99999px';
-  iframe.style.top = '0';
-  iframe.style.width = '794px';   // A4 폭 (96dpi 기준 210mm)
-  iframe.style.height = '1123px'; // A4 높이 (96dpi 기준 297mm)
-  iframe.style.border = 'none';
-  document.body.appendChild(iframe);
-
-  await new Promise((resolve)=>{
-    iframe.onload = resolve;
-    iframe.srcdoc = html;
-  });
-  // 폰트(Noto Serif KR / Pretendard) 로딩 및 레이아웃 안정화 대기
+  // 복원용 데이터를 문서 속성(메타데이터)에 삽입 - 화면/인쇄 시 노출되지 않음
   try{
-    if(iframe.contentDocument.fonts && iframe.contentDocument.fonts.ready){
-      await iframe.contentDocument.fonts.ready;
-    }
-  }catch(e){}
-  await new Promise((resolve)=> setTimeout(resolve, 300));
+    embedRestoreDataMeta(pdf, JSON.stringify(collectFormData()));
+  }catch(embedErr){
+    console.error('복원용 데이터 삽입 중 오류가 발생했습니다.', embedErr);
+  }
 
-  const idoc = iframe.contentDocument;
-  const btnBar = idoc.querySelector('.print-btn-bar');
-  if(btnBar) btnBar.remove();
+  let base64 = pdf.output('datauristring').split(',')[1];
 
-  let base64 = '';
-  try{
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4', compress:true });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const marginX = 12;
-    const marginTop = 12;
-    const marginBottom = 14;
-    const contentWidth = pageWidth - marginX * 2;
-
-    let currentY = marginTop;
-    let firstBlock = true;
-
-    // 문서를 구성하는 각 블록(표지, 섹션 제목, 표의 각 행, 동의 확인, 마무리 문구)을 행 단위로 개별 캡처
-    const blocks = Array.from(idoc.body.children);
-
-    for(const block of blocks){
-      // 화면에 보이지 않거나 내용이 비어있는 블록은 건너뜀
-      if(!block || block.offsetHeight === 0) continue;
-
-      const canvas = await html2canvas(block, {
-        backgroundColor:'#FFFFFF',
-        scale:1.3,
-        windowWidth: idoc.documentElement.scrollWidth
-      });
-
-      const imgWidth = contentWidth;
-      const imgHeight = canvas.height * imgWidth / canvas.width;
-      const gapMm = block.dataset && block.dataset.gap !== undefined ? parseFloat(block.dataset.gap) : 3.5;
-      // 섹션 제목은 뒤따르는 첫 행과 함께 붙어있어야 하므로, 제목만 페이지 맨 끝에 남지 않도록 여유 공간을 더 확보
-      const isSecHead = block.classList && block.classList.contains('rpt-sec-head');
-      const reserve = isSecHead ? 13 : 0;
-
-      // 현재 페이지에 남은 공간보다 블록이 크면 새 페이지로 이동 (행 단위 블록이므로 표 중간에서 잘리는 일이 없음)
-      if(!firstBlock && (currentY + gapMm + imgHeight + reserve > pageHeight - marginBottom)){
-        pdf.addPage();
-        currentY = marginTop;
-      } else if(!firstBlock){
-        currentY += gapMm;
-      }
-      firstBlock = false;
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.68);
-      pdf.addImage(imgData, 'JPEG', marginX, currentY, imgWidth, imgHeight);
-      currentY += imgHeight;
-    }
-
-    // 페이지 하단에 브랜드명/페이지 번호 삽입 (실제 보이는 내용 페이지에만 적용)
-    const pageCount = pdf.internal.getNumberOfPages();
-    for(let p=1;p<=pageCount;p++){
-      pdf.setPage(p);
-      pdf.setFont('helvetica','normal');
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(184,145,107); // rosegold
-      pdf.text('MOMENT WORKS', marginX, pageHeight - 7);
-      pdf.setTextColor(140,120,100);
-      pdf.text(`${p} / ${pageCount}`, pageWidth - marginX, pageHeight - 7, { align:'right' });
-    }
-
-    // 마지막에 복원용 데이터 페이지 추가 (페이지 번호 표기 대상에서는 제외)
-    try{
-      embedRestoreDataPage(pdf, JSON.stringify(collectFormData()));
-    }catch(embedErr){
-      console.error('복원용 데이터 삽입 중 오류가 발생했습니다.', embedErr);
-    }
-
-    base64 = pdf.output('datauristring').split(',')[1];
-
-
-    // 용량이 너무 크면(약 4.5MB 이상) 서버 전송 실패 위험이 있어 첨부를 생략
-    const MAX_PDF_BASE64_LENGTH = 6000000; // base64 약 4.5MB
-    if(base64 && base64.length > MAX_PDF_BASE64_LENGTH){
-      console.warn(`생성된 PDF 용량이 너무 커서(base64 ${base64.length}자) 첨부를 생략합니다.`);
-      base64 = '';
-    }
-  } finally {
-    document.body.removeChild(iframe);
+  // 용량이 너무 크면(약 4.5MB 이상) 서버 전송 실패 위험이 있어 첨부를 생략
+  const MAX_PDF_BASE64_LENGTH = 6000000; // base64 약 4.5MB
+  if(base64 && base64.length > MAX_PDF_BASE64_LENGTH){
+    console.warn(`생성된 PDF 용량이 너무 커서(base64 ${base64.length}자) 첨부를 생략합니다.`);
+    base64 = '';
   }
 
   return base64;
 }
+
 </script>
 </body>
 </html>
