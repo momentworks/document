@@ -154,7 +154,7 @@
     padding:4px;
   }
   input::placeholder,textarea::placeholder{color:#B7AA98;font-size:14px;}
-  .time-select-group{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .time-select-group{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   select.time-select{
     width:100%;
     height:46px;
@@ -452,17 +452,16 @@
       <div class="field">
         <label class="flabel">예식 시작시간</label>
         <div class="time-select-group">
-          <select class="time-select" id="weddingTimeAmpm" aria-label="오전/오후">
-            <option value="">--</option>
-            <option value="오전">오전</option>
-            <option value="오후">오후</option>
-          </select>
           <select class="time-select" id="weddingTimeHour" aria-label="시">
             <option value="">시</option>
-            <option value="01">01</option><option value="02">02</option><option value="03">03</option>
+            <option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option>
             <option value="04">04</option><option value="05">05</option><option value="06">06</option>
             <option value="07">07</option><option value="08">08</option><option value="09">09</option>
             <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+            <option value="13">13</option><option value="14">14</option><option value="15">15</option>
+            <option value="16">16</option><option value="17">17</option><option value="18">18</option>
+            <option value="19">19</option><option value="20">20</option><option value="21">21</option>
+            <option value="22">22</option><option value="23">23</option>
           </select>
           <select class="time-select" id="weddingTimeMinute" aria-label="분">
             <option value="">분</option>
@@ -718,17 +717,16 @@
     <div class="field">
       <label class="flabel">신랑, 신부님 웨딩홀 도착 예상 시간</label>
       <div class="time-select-group">
-        <select class="time-select" id="schArriveAmpm" aria-label="오전/오후">
-          <option value="">--</option>
-          <option value="오전">오전</option>
-          <option value="오후">오후</option>
-        </select>
         <select class="time-select" id="schArriveHour" aria-label="시">
           <option value="">시</option>
-          <option value="01">01</option><option value="02">02</option><option value="03">03</option>
+          <option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option>
           <option value="04">04</option><option value="05">05</option><option value="06">06</option>
           <option value="07">07</option><option value="08">08</option><option value="09">09</option>
           <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+          <option value="13">13</option><option value="14">14</option><option value="15">15</option>
+          <option value="16">16</option><option value="17">17</option><option value="18">18</option>
+          <option value="19">19</option><option value="20">20</option><option value="21">21</option>
+          <option value="22">22</option><option value="23">23</option>
         </select>
         <select class="time-select" id="schArriveMinute" aria-label="분">
           <option value="">분</option>
@@ -1048,34 +1046,28 @@ const STORAGE_KEY = 'mw_survey_draft_v1';
 // ====== Google Apps Script 연동 설정 ======
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzgy0MsopPhXo2y4idf8Y-lRMIv-tY5FWs-bfAJR3XTVWgN-oUDCivDKVwPCDaXna5qNQ/exec';
 
-// 예식 시작시간: 오전/오후·시·분 select 값을 조합해 24시간제 hidden input(wedding_time)에 반영
+// 예식 시작시간: 시·분(24시간제) select 값을 조합해 hidden input(wedding_time)에 반영
 function syncWeddingTimeHidden(){
-  const ampm = document.getElementById('weddingTimeAmpm').value;
-  const hour12 = document.getElementById('weddingTimeHour').value;
+  const hour = document.getElementById('weddingTimeHour').value;
   const minute = document.getElementById('weddingTimeMinute').value;
   const hidden = document.getElementById('weddingTimeHidden');
-  if(!ampm || !hour12 || !minute){ hidden.value = ''; return; }
-  let h = parseInt(hour12, 10) % 12;
-  if(ampm === '오후') h += 12;
-  hidden.value = `${String(h).padStart(2,'0')}:${minute}`;
+  if(!hour || !minute){ hidden.value = ''; return; }
+  hidden.value = `${hour}:${minute}`;
 }
-['weddingTimeAmpm','weddingTimeHour','weddingTimeMinute'].forEach(id=>{
+['weddingTimeHour','weddingTimeMinute'].forEach(id=>{
   document.getElementById(id).addEventListener('change', syncWeddingTimeHidden);
 });
 syncWeddingTimeHidden();
 
-// 당일 일정: 신랑,신부님 웨딩홀 도착 예상 시간 (10분 단위) — 오전/오후·시·분 select 값을 24시간제 hidden input(sch_mw_arrive)에 반영
+// 당일 일정: 신랑,신부님 웨딩홀 도착 예상 시간 (24시간제 시·분, 10분 단위) — hidden input(sch_mw_arrive)에 반영
 function syncSchArriveHidden(){
-  const ampm = document.getElementById('schArriveAmpm').value;
-  const hour12 = document.getElementById('schArriveHour').value;
+  const hour = document.getElementById('schArriveHour').value;
   const minute = document.getElementById('schArriveMinute').value;
   const hidden = document.getElementById('schArriveHidden');
-  if(!ampm || !hour12 || !minute){ hidden.value = ''; return; }
-  let h = parseInt(hour12, 10) % 12;
-  if(ampm === '오후') h += 12;
-  hidden.value = `${String(h).padStart(2,'0')}:${minute}`;
+  if(!hour || !minute){ hidden.value = ''; return; }
+  hidden.value = `${hour}:${minute}`;
 }
-['schArriveAmpm','schArriveHour','schArriveMinute'].forEach(id=>{
+['schArriveHour','schArriveMinute'].forEach(id=>{
   document.getElementById(id).addEventListener('change', syncSchArriveHidden);
 });
 syncSchArriveHidden();
@@ -1165,40 +1157,26 @@ function restoreFormData(providedData){
   });
   if(data.final_agree) form.querySelector('[name=final_agree]').checked = true;
 
-  // 예식 시작시간(오전/오후·시·분 select)을 저장된 24시간제 값으로 복원
+  // 예식 시작시간(24시간제 시·분 select)을 저장된 값으로 복원
   if(data.wedding_time){
     const m = /^(\d{2}):(\d{2})$/.exec(data.wedding_time);
     if(m){
-      let h = parseInt(m[1], 10);
-      const minute = m[2];
-      const ampm = h < 12 ? '오전' : '오후';
-      let h12 = h % 12;
-      if(h12 === 0) h12 = 12;
-      const ampmEl = document.getElementById('weddingTimeAmpm');
       const hourEl = document.getElementById('weddingTimeHour');
       const minuteEl = document.getElementById('weddingTimeMinute');
-      if(ampmEl) ampmEl.value = ampm;
-      if(hourEl) hourEl.value = String(h12).padStart(2,'0');
-      if(minuteEl) minuteEl.value = minute;
+      if(hourEl) hourEl.value = m[1];
+      if(minuteEl) minuteEl.value = m[2];
       syncWeddingTimeHidden();
     }
   }
 
-  // 신랑,신부님 웨딩홀 도착 예상 시간(오전/오후·시·분 select)을 저장된 24시간제 값으로 복원
+  // 신랑,신부님 웨딩홀 도착 예상 시간(24시간제 시·분 select)을 저장된 값으로 복원
   if(data.sch_mw_arrive){
     const m2 = /^(\d{2}):(\d{2})$/.exec(data.sch_mw_arrive);
     if(m2){
-      let h = parseInt(m2[1], 10);
-      const minute = m2[2];
-      const ampm = h < 12 ? '오전' : '오후';
-      let h12 = h % 12;
-      if(h12 === 0) h12 = 12;
-      const ampmEl = document.getElementById('schArriveAmpm');
       const hourEl = document.getElementById('schArriveHour');
       const minuteEl = document.getElementById('schArriveMinute');
-      if(ampmEl) ampmEl.value = ampm;
-      if(hourEl) hourEl.value = String(h12).padStart(2,'0');
-      if(minuteEl) minuteEl.value = minute;
+      if(hourEl) hourEl.value = m2[1];
+      if(minuteEl) minuteEl.value = m2[2];
       syncSchArriveHidden();
     }
   }
