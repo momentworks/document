@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
     --ivory:#FAF6F0;
@@ -430,6 +431,14 @@
       <div class="field"><label class="flabel">신랑 성함</label><input type="text" name="groom_name" placeholder="신랑 성함"></div>
       <div class="field"><label class="flabel">신부 성함</label><input type="text" name="bride_name" placeholder="신부 성함"></div>
     </div>
+    <div class="field">
+      <label class="flabel">계약 패키지</label>
+      <div class="choices">
+        <div class="chip"><input type="radio" name="contract_package" id="cp1" value="한측"><label for="cp1">한측</label></div>
+        <div class="chip"><input type="radio" name="contract_package" id="cp2" value="양측"><label for="cp2">양측</label></div>
+        <div class="chip"><input type="radio" name="contract_package" id="cp3" value="통합"><label for="cp3">통합</label></div>
+      </div>
+    </div>
     <div class="row2">
       <div class="field"><label class="flabel">예식일</label><input type="date" name="wedding_date"></div>
       <div class="field">
@@ -682,7 +691,16 @@
     <div class="field">
       <label class="flabel">축의금 정리내역 전달</label>
       <div class="sec-note" style="margin:2px 0 8px;">정리된 PDF와 엑셀 파일을 전달받으실 이메일 주소를 입력해주세요.</div>
-      <input type="email" name="handover_report_email" placeholder="example@email.com">
+      <div class="row2">
+        <div class="field">
+          <label class="flabel">신랑측 이메일</label>
+          <input type="email" name="handover_report_email_groom" placeholder="example@email.com">
+        </div>
+        <div class="field">
+          <label class="flabel">신부측 이메일</label>
+          <input type="email" name="handover_report_email_bride" placeholder="example@email.com">
+        </div>
+      </div>
     </div>
   </div>
 
@@ -802,6 +820,8 @@
 
 <div class="submit-bar">
   <div class="bar-inner">
+    <button class="tmp-save-btn" id="loadPdfBtn" type="button" style="background:var(--ivory-deep);color:var(--ink);border:1px solid var(--rosegold);">PDF에서 불러오기</button>
+    <input type="file" id="loadPdfInput" accept="application/pdf" style="display:none;">
     <button class="tmp-save-btn" id="tmpSaveBtn" type="button">임시저장하기</button>
     <button class="submit-btn" id="submitContractBtn" type="button">설정서 제출하기</button>
     <div class="save-row" id="adminSaveRow" style="display:none;">
@@ -894,7 +914,7 @@ document.getElementById('addVipRow').addEventListener('click', ()=>{
 // ---- build summary ----
 function label(name){
   const map = {
-    groom_name:'신랑 성함', bride_name:'신부 성함', wedding_date:'예식일', wedding_time:'예식 시작시간',
+    groom_name:'신랑 성함', bride_name:'신부 성함', contract_package:'계약 패키지', wedding_date:'예식일', wedding_time:'예식 시작시간',
     venue_name:'예식장명', venue_region:'지역', hall_name:'홀 이름', groom_guest_count:'신랑측 예상 하객 수', bride_guest_count:'신부측 예상 하객 수',
     groom_side_name:'[신랑측] 혼주 성함', bride_side_name:'[신부측] 혼주 성함',
     relation_type:'관계 설정', relation_type_etc:'관계 설정(기타)',
@@ -913,7 +933,7 @@ function label(name){
     info_hall:'연회장 위치', info_bride_room:'신부대기실 위치', info_meal_time:'식사 가능 시간',
     handover_relation_groom:'인계 받으실 분(신랑측) - 관계', handover_name_groom:'인계 받으실 분(신랑측) - 성함', handover_phone_groom:'인계 받으실 분(신랑측) - 연락처',
     handover_relation_bride:'인계 받으실 분(신부측) - 관계', handover_name_bride:'인계 받으실 분(신부측) - 성함', handover_phone_bride:'인계 받으실 분(신부측) - 연락처',
-    final_report_visibility:'축의금 인계시, 축의금 내역 노출 여부', detail_delivery_way:'축의금 전체 세부내역 전달 방식', handover_report_email:'축의금 정리내역 전달 이메일',
+    final_report_visibility:'축의금 인계시, 축의금 내역 노출 여부', detail_delivery_way:'축의금 전체 세부내역 전달 방식', handover_report_email_groom:'축의금 정리내역 전달 이메일(신랑측)', handover_report_email_bride:'축의금 정리내역 전달 이메일(신부측)',
     sch_mw_arrive:'신랑,신부님 웨딩홀 도착 예상 시간',
     emg_1_relation:'비상연락 1순위 - 관계', emg_1_name:'비상연락 1순위 - 성함', emg_1_phone:'비상연락 1순위 - 연락처',
     emg_2_relation:'비상연락 2순위 - 관계', emg_2_name:'비상연락 2순위 - 성함', emg_2_phone:'비상연락 2순위 - 연락처',
@@ -927,14 +947,14 @@ function label(name){
 }
 
 const SECTIONS = [
-  ['01. 예식 기본정보',['groom_name','bride_name','wedding_date','wedding_time','venue_region','venue_name','hall_name','groom_guest_count','bride_guest_count']],
+  ['01. 예식 기본정보',['groom_name','bride_name','contract_package','wedding_date','wedding_time','venue_region','venue_name','hall_name','groom_guest_count','bride_guest_count']],
   ['02. 양가 정보',['groom_side_name','bride_side_name']],
   ['03. 관계 설정',['relation_type','relation_type_etc']],
   ['04. 축의금 정리방식',['money_op','transfer_yn','groom_account','bride_account','refund_way','refund_way_etc']],
   ['05. 식권 운영',['ticket_adult_groom','ticket_child_groom','ticket_adult_bride','ticket_child_bride','transfer_check_way','mobile_invitation_url','ticket_cross_use','ticket_out_way','ticket_out_place','child_ticket_age','child_to_adult_ticket','ticket_reissue_way','ticket_reissue_way_etc']],
   ['06. 답례품',['gift_yn','gift_type','gift_place','gift_target','gift_criteria','gift_script']],
   ['07. 하객 안내사항',['info_parking_way','info_parking_time','info_atm','info_hall','info_bride_room','info_meal_time']],
-  ['09. 축의금 인계',['handover_relation_groom','handover_name_groom','handover_phone_groom','handover_relation_bride','handover_name_bride','handover_phone_bride','final_report_visibility','detail_delivery_way','handover_report_email']],
+  ['09. 축의금 인계',['handover_relation_groom','handover_name_groom','handover_phone_groom','handover_relation_bride','handover_name_bride','handover_phone_bride','final_report_visibility','detail_delivery_way','handover_report_email_groom','handover_report_email_bride']],
   ['10. 당일 일정',['sch_mw_arrive']],
   ['11. 긴급상황 대응',['emg_1_relation','emg_1_name','emg_1_phone','emg_2_relation','emg_2_name','emg_2_phone']],
   ['12. 사진 및 영상촬영',['photo_consent','extra_camera','camera_deliverer_relation','camera_deliverer_name','camera_deliverer_phone','link_receiver_groom','link_receiver_bride']],
@@ -988,7 +1008,7 @@ function showToast(msg){
 const STORAGE_KEY = 'mw_survey_draft_v1';
 
 // ====== Google Apps Script 연동 설정 ======
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwfDKHBNeLbAcxcggr3bHpC0-MMtuqsuSQNqjGnJ03Jolginr1SLUh-unlZ4TwfUOnb/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzgy0MsopPhXo2y4idf8Y-lRMIv-tY5FWs-bfAJR3XTVWgN-oUDCivDKVwPCDaXna5qNQ/exec';
 
 // 예식 시작시간: 오전/오후·시·분 select 값을 조합해 24시간제 hidden input(wedding_time)에 반영
 function syncWeddingTimeHidden(){
@@ -1041,12 +1061,94 @@ function collectFormData(){
   return data;
 }
 
-function restoreFormData(){
-  let raw;
-  try{ raw = localStorage.getItem(STORAGE_KEY); }catch(e){ return; }
-  if(!raw) return;
-  let data;
-  try{ data = JSON.parse(raw); }catch(e){ return; }
+// ---- 문자열 <-> base64 변환 (한글 등 유니코드 안전 처리) ----
+function bytesToBase64(bytes){
+  let binary = '';
+  const chunkSize = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunkSize){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunkSize));
+  }
+  return btoa(binary);
+}
+function base64ToBytes(b64){
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+function utf8ToBase64(str){ return bytesToBase64(new TextEncoder().encode(str)); }
+function base64ToUtf8(b64){ return new TextDecoder().decode(base64ToBytes(b64)); }
+
+const PDF_DATA_MARKER_START = '--MW-DATA-START--';
+const PDF_DATA_MARKER_END = '--MW-DATA-END--';
+
+// PDF 마지막 페이지에 작성 데이터를 텍스트로 삽입 → 나중에 이 PDF를 업로드하면 그대로 복원 가능
+function embedRestoreDataPage(pdf, jsonString){
+  const b64 = utf8ToBase64(jsonString);
+  pdf.addPage();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const marginX = 12;
+  const maxWidth = pageWidth - marginX * 2;
+
+  pdf.setFont('helvetica','normal');
+  pdf.setFontSize(9);
+  pdf.setTextColor(140,120,100);
+  pdf.text('MOMENT WORKS - Restore Data Page', marginX, 15);
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(160,160,160);
+  pdf.text('Do not delete this page. To edit this submission later, upload this exact PDF file', marginX, 21);
+  pdf.text('using the "PDF" import button on the form website to restore everything you entered.', marginX, 26);
+
+  pdf.setFont('courier','normal');
+  pdf.setFontSize(6);
+  pdf.setTextColor(190,190,190);
+
+  // 페이지 폭에 맞춰 한 줄에 들어갈 문자 수를 실측으로 계산
+  let lineLen = 100;
+  while(lineLen > 10 && pdf.getTextWidth('0'.repeat(lineLen)) > maxWidth){ lineLen -= 5; }
+
+  const lines = [PDF_DATA_MARKER_START];
+  for(let i=0;i<b64.length;i+=lineLen){ lines.push(b64.slice(i, i+lineLen)); }
+  lines.push(PDF_DATA_MARKER_END);
+
+  let y = 34;
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  lines.forEach(line=>{
+    if(y > pageHeight - 12){ pdf.addPage(); y = 15; }
+    pdf.text(line, marginX, y);
+    y += 3.1;
+  });
+}
+
+// PDF 파일(ArrayBuffer)에서 삽입해둔 복원 데이터를 추출해 JSON 객체로 반환
+async function extractRestoreDataFromPdf(arrayBuffer){
+  if(!window.pdfjsLib) throw new Error('PDF 분석 라이브러리를 불러오지 못했습니다.');
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const doc = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for(let i=1;i<=doc.numPages;i++){
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(it=>it.str).join('\n') + '\n';
+  }
+  const startIdx = fullText.indexOf(PDF_DATA_MARKER_START);
+  const endIdx = fullText.indexOf(PDF_DATA_MARKER_END);
+  if(startIdx === -1 || endIdx === -1 || endIdx < startIdx){
+    throw new Error('이 PDF에서는 복원 데이터를 찾을 수 없습니다. 모먼트웍스 설정서에서 생성된 PDF가 맞는지 확인해 주세요.');
+  }
+  const b64 = fullText.slice(startIdx + PDF_DATA_MARKER_START.length, endIdx).replace(/\s+/g, '');
+  const jsonString = base64ToUtf8(b64);
+  return JSON.parse(jsonString);
+}
+
+function restoreFormData(providedData){
+  let data = providedData;
+  if(!data){
+    let raw;
+    try{ raw = localStorage.getItem(STORAGE_KEY); }catch(e){ return; }
+    if(!raw) return;
+    try{ data = JSON.parse(raw); }catch(e){ return; }
+  }
 
   Object.keys(data).forEach(name=>{
     if(['final_agree','vip_name','vip_relation','vip_contact','vip_memo'].includes(name)) return;
@@ -1216,7 +1318,8 @@ function submitContract(){
     venue_name: fd.get('venue_name') || '',
     venue_region: fd.get('venue_region') || '',
     contractor_name: fd.get('contractor_name') || '',
-    handover_report_email: fd.get('handover_report_email') || '',
+    handover_report_email_groom: fd.get('handover_report_email_groom') || '',
+    handover_report_email_bride: fd.get('handover_report_email_bride') || '',
     rows: rows,
     summary: buildSummary()
   };
@@ -1341,6 +1444,37 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
         btn.disabled = false;
         btn.textContent = originalText;
     }
+});
+
+document.getElementById('loadPdfBtn').addEventListener('click', ()=>{
+  document.getElementById('loadPdfInput').click();
+});
+document.getElementById('loadPdfInput').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const loadBtn = document.getElementById('loadPdfBtn');
+  const originalText = loadBtn.textContent;
+  loadBtn.disabled = true;
+  loadBtn.textContent = '불러오는 중...';
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const data = await extractRestoreDataFromPdf(arrayBuffer);
+    const confirmMsg = '이 PDF에 저장된 내용을 불러올까요?\n현재 화면에 작성 중인 내용은 덮어씌워집니다.';
+    if(!window.confirm(confirmMsg)){
+      return;
+    }
+    restoreFormData(data);
+    applyAllConditionalGroups();
+    updateProgress();
+    showToast('PDF에서 불러왔습니다. 수정 후 다시 제출해 주세요.');
+  }catch(err){
+    console.error('PDF 불러오기 중 오류가 발생했습니다.', err);
+    alert(err.message || 'PDF에서 데이터를 불러오지 못했습니다.');
+  }finally{
+    loadBtn.disabled = false;
+    loadBtn.textContent = originalText;
+    e.target.value = '';
+  }
 });
 
 document.getElementById('tmpSaveBtn').addEventListener('click', ()=>{
@@ -1722,7 +1856,7 @@ async function generateSubmissionPdfBase64(){
       currentY += imgHeight;
     }
 
-    // 페이지 하단에 브랜드명/페이지 번호 삽입
+    // 페이지 하단에 브랜드명/페이지 번호 삽입 (실제 보이는 내용 페이지에만 적용)
     const pageCount = pdf.internal.getNumberOfPages();
     for(let p=1;p<=pageCount;p++){
       pdf.setPage(p);
@@ -1732,6 +1866,13 @@ async function generateSubmissionPdfBase64(){
       pdf.text('MOMENT WORKS', marginX, pageHeight - 7);
       pdf.setTextColor(140,120,100);
       pdf.text(`${p} / ${pageCount}`, pageWidth - marginX, pageHeight - 7, { align:'right' });
+    }
+
+    // 마지막에 복원용 데이터 페이지 추가 (페이지 번호 표기 대상에서는 제외)
+    try{
+      embedRestoreDataPage(pdf, JSON.stringify(collectFormData()));
+    }catch(embedErr){
+      console.error('복원용 데이터 삽입 중 오류가 발생했습니다.', embedErr);
     }
 
     base64 = pdf.output('datauristring').split(',')[1];
