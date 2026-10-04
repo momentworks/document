@@ -469,6 +469,10 @@
       <div class="field"><label class="flabel">신랑 성함</label><input type="text" name="groom_name" placeholder="신랑 성함"></div>
       <div class="field"><label class="flabel">신부 성함</label><input type="text" name="bride_name" placeholder="신부 성함"></div>
     </div>
+    <div class="row2">
+      <div class="field"><label class="flabel">신랑 연락처</label><input type="tel" name="groom_phone" placeholder="010-0000-0000" maxlength="13"></div>
+      <div class="field"><label class="flabel">신부 연락처</label><input type="tel" name="bride_phone" placeholder="010-0000-0000" maxlength="13"></div>
+    </div>
     <div class="field">
       <label class="flabel">계약 패키지</label>
       <div class="choices">
@@ -892,6 +896,24 @@
 <script>
 const form = document.getElementById('surveyForm');
 
+// ---- 연락처 입력 시 자동 '-' 구분 포맷 (010-0000-0000) ----
+function formatPhoneNumber(value){
+  const digits = (value || '').replace(/\D/g, '').slice(0, 11);
+  if(digits.length < 4) return digits;
+  if(digits.length < 8) return digits.slice(0,3) + '-' + digits.slice(3);
+  if(digits.length < 11) return digits.slice(0,3) + '-' + digits.slice(3,6) + '-' + digits.slice(6);
+  return digits.slice(0,3) + '-' + digits.slice(3,7) + '-' + digits.slice(7,11);
+}
+function attachPhoneAutoFormat(selector){
+  document.querySelectorAll(selector).forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const formatted = formatPhoneNumber(el.value);
+      if(el.value !== formatted) el.value = formatted;
+    });
+  });
+}
+attachPhoneAutoFormat('input[name="groom_phone"], input[name="bride_phone"]');
+
 // ---- 예/아니오, 가능/불가능, 있음/없음 선택 시 관련 입력칸 비활성화 ----
 const CONDITIONAL_GROUPS = {
   transfer_yn:{ negative:'아니오', targets:['input[name="groom_account"]','input[name="bride_account"]'], dimEl:()=>document.querySelector('#surveyForm input[name="transfer_yn"]').closest('.field').querySelector('.subfield-group') },
@@ -1061,7 +1083,7 @@ document.getElementById('addVipRow').addEventListener('click', ()=>{
 // ---- build summary ----
 function label(name){
   const map = {
-    groom_name:'신랑 성함', bride_name:'신부 성함', contract_package:'계약 패키지', contract_half_side:'한측 계약 - 계약 측', wedding_date:'예식일', wedding_time:'예식 시작시간',
+    groom_name:'신랑 성함', bride_name:'신부 성함', groom_phone:'신랑 연락처', bride_phone:'신부 연락처', contract_package:'계약 패키지', contract_half_side:'한측 계약 - 계약 측', wedding_date:'예식일', wedding_time:'예식 시작시간',
     venue_name:'예식장명', venue_region:'지역', hall_name:'홀 이름', groom_guest_count:'신랑측 예상 하객 수', bride_guest_count:'신부측 예상 하객 수',
     groom_side_name:'[신랑측] 혼주 성함', bride_side_name:'[신부측] 혼주 성함',
     relation_type:'관계 설정', relation_type_etc:'관계 설정(기타)', agency_awareness:'축의업체 인지사항',
@@ -1094,7 +1116,7 @@ function label(name){
 }
 
 const SECTIONS = [
-  ['01. 예식 기본정보',['groom_name','bride_name','contract_package','contract_half_side','wedding_date','wedding_time','venue_region','venue_name','hall_name','groom_guest_count','bride_guest_count']],
+  ['01. 예식 기본정보',['groom_name','bride_name','groom_phone','bride_phone','contract_package','contract_half_side','wedding_date','wedding_time','venue_region','venue_name','hall_name','groom_guest_count','bride_guest_count']],
   ['02. 양가 정보',['groom_side_name','bride_side_name']],
   ['03. 관계 설정',['agency_awareness','relation_type','relation_type_etc']],
   ['04. 축의금 정리방식',['money_op','transfer_yn','groom_account','bride_account','refund_way','refund_way_etc']],
