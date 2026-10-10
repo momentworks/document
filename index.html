@@ -607,7 +607,7 @@
       <label class="flabel">본식 당일 식권 전달해주시는 분</label>
       <input type="text" name="ticket_deliverer_relation" placeholder="관계 (예: 신랑 친구)" style="margin-bottom:8px;">
       <input type="text" name="ticket_deliverer_name" placeholder="성함" style="margin-bottom:8px;">
-      <input type="tel" name="ticket_deliverer_phone" placeholder="연락처 (숫자만 입력)">
+      <input type="tel" name="ticket_deliverer_phone" placeholder="010-0000-0000" maxlength="13">
     </div>
     <div class="field">
       <label class="flabel">축의금 계좌이체 하객 응대 방법</label>
@@ -708,9 +708,9 @@
             </tr>
           </thead>
           <tbody id="vipTbody">
-            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
-            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
-            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
+            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="010-0000-0000" maxlength="13"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
+            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="010-0000-0000" maxlength="13"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
+            <tr><td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="010-0000-0000" maxlength="13"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td></tr>
           </tbody>
         </table>
       </div>
@@ -728,13 +728,13 @@
         <label class="flabel">인계 받으실 분 (신랑측)</label>
         <input type="text" name="handover_relation_groom" placeholder="관계 (예: 신랑 아버님)" style="margin-bottom:8px;">
         <input type="text" name="handover_name_groom" placeholder="성함" style="margin-bottom:8px;">
-        <input type="tel" name="handover_phone_groom" placeholder="연락처 (숫자만 입력)">
+        <input type="tel" name="handover_phone_groom" placeholder="010-0000-0000" maxlength="13">
       </div>
       <div class="field">
         <label class="flabel">인계 받으실 분 (신부측)</label>
         <input type="text" name="handover_relation_bride" placeholder="관계 (예: 신부 어머님)" style="margin-bottom:8px;">
         <input type="text" name="handover_name_bride" placeholder="성함" style="margin-bottom:8px;">
-        <input type="tel" name="handover_phone_bride" placeholder="연락처 (숫자만 입력)">
+        <input type="tel" name="handover_phone_bride" placeholder="010-0000-0000" maxlength="13">
       </div>
     </div>
     <div class="field">
@@ -804,13 +804,13 @@
         <label class="flabel">1순위</label>
         <input type="text" name="emg_1_relation" placeholder="관계 (예: 신랑 형님)" style="margin-bottom:8px;">
         <input type="text" name="emg_1_name" placeholder="성함" style="margin-bottom:8px;">
-        <input type="tel" name="emg_1_phone" placeholder="연락처 (숫자만 입력)">
+        <input type="tel" name="emg_1_phone" placeholder="010-0000-0000" maxlength="13">
       </div>
       <div class="field">
         <label class="flabel">2순위</label>
         <input type="text" name="emg_2_relation" placeholder="관계 (예: 신부 언니)" style="margin-bottom:8px;">
         <input type="text" name="emg_2_name" placeholder="성함" style="margin-bottom:8px;">
-        <input type="tel" name="emg_2_phone" placeholder="연락처 (숫자만 입력)">
+        <input type="tel" name="emg_2_phone" placeholder="010-0000-0000" maxlength="13">
       </div>
     </div>
   </div>
@@ -839,7 +839,7 @@
         <label class="flabel">추가 카메라를 전달해주실 분</label>
         <input type="text" name="camera_deliverer_relation" placeholder="관계 (예: 신랑 친구)" style="margin-bottom:8px;">
         <input type="text" name="camera_deliverer_name" placeholder="성함" style="margin-bottom:8px;">
-        <input type="tel" name="camera_deliverer_phone" placeholder="연락처 (숫자만 입력)">
+        <input type="tel" name="camera_deliverer_phone" placeholder="010-0000-0000" maxlength="13">
       </div>
     </div>
     <div class="sec-note" style="margin-top:6px;">📌 현장 통신 상황이 불안정한 경우, 녹화로 대체 될 수 있습니다.<br>녹화본(유튜브링크)은 당일 자정까지 메일로 받아보실 수 있습니다.</div>
@@ -911,7 +911,14 @@ function attachPhoneAutoFormat(selector){
     });
   });
 }
-attachPhoneAutoFormat('input[name="groom_phone"], input[name="bride_phone"]');
+// 모든 연락처 입력칸(tel 타입 + VIP 연락처, 동적으로 추가되는 행 포함)에 이벤트 위임으로 적용
+const PHONE_INPUT_SELECTOR = 'input[type="tel"], input[name="vip_contact[]"]';
+form.addEventListener('input', (e)=>{
+  const el = e.target;
+  if(!el || !el.matches || !el.matches(PHONE_INPUT_SELECTOR)) return;
+  const formatted = formatPhoneNumber(el.value);
+  if(el.value !== formatted) el.value = formatted;
+});
 
 // ---- 예/아니오, 가능/불가능, 있음/없음 선택 시 관련 입력칸 비활성화 ----
 const CONDITIONAL_GROUPS = {
@@ -1070,7 +1077,7 @@ updateProgress();
 document.getElementById('addVipRow').addEventListener('click', ()=>{
   const tbody = document.getElementById('vipTbody');
   const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="연락처"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td>`;
+  tr.innerHTML = `<td><input type="text" name="vip_name[]" placeholder="성함/업체"></td><td><input type="text" name="vip_relation[]" placeholder="관계"></td><td><input type="text" name="vip_contact[]" placeholder="010-0000-0000" maxlength="13"></td><td><input type="text" name="vip_memo[]" placeholder="수량"></td>`;
   tbody.appendChild(tr);
   // 현재 VIP 명단 작성 여부가 '없음'이면 새로 추가된 행도 비활성화 상태로 시작
   const vipChecked = form.querySelector('input[name="vip_yn"]:checked');
@@ -1484,7 +1491,12 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
                 const gName = (payload.groom_name || '신랑').trim();
                 const bName = (payload.bride_name || '신부').trim();
                 const wDate = (payload.wedding_date || '').replaceAll('-', '');
-                payload.pdf_filename = `모먼트웍스_축의대설정서_${gName}_${bName}${wDate ? '_' + wDate : ''}.pdf`;
+                const wTime = (payload.wedding_time || '').replace(/\D/g, '');
+                const regionRaw = (payload.venue_region || '').trim();
+                const region = (regionRaw.includes('/') ? regionRaw.split('/').pop() : regionRaw).trim();
+                const dateTime = [wDate, wTime].filter(Boolean).join('_');
+                const rawName = `[모먼트웍스] 축의대 대행 운영설정서${dateTime ? '(' + dateTime + ')' : ''}_${gName}_${bName}${region ? '(' + region + ')' : ''}`;
+                payload.pdf_filename = rawName.replace(/[\\/:*?"<>|]/g, '') + '.pdf';
             } else {
                 console.warn('PDF 용량 제한으로 첨부 없이 제출을 진행합니다.');
                 pdfGenerationFailed = true;
