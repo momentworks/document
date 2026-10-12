@@ -1495,7 +1495,7 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
                 const regionRaw = (payload.venue_region || '').trim();
                 const region = (regionRaw.includes('/') ? regionRaw.split('/').pop() : regionRaw).trim();
                 const dateTime = [wDate, wTime].filter(Boolean).join('_');
-                const rawName = `[모먼트웍스] 축의대 대행 운영설정서${dateTime ? '(' + dateTime + ')' : ''}_${gName}_${bName}${region ? '(' + region + ')' : ''}`;
+                const rawName = `[모먼트웍스] 축의대 설정서${dateTime ? '(' + dateTime + ')' : ''}_${gName}_${bName}${region ? '(' + region + ')' : ''}`;
                 payload.pdf_filename = rawName.replace(/[\\/:*?"<>|]/g, '') + '.pdf';
             } else {
                 console.warn('PDF 용량 제한으로 첨부 없이 제출을 진행합니다.');
