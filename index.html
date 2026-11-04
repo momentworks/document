@@ -584,7 +584,7 @@
       </div>
     </div>
     <div class="field">
-      <label class="flabel">계좌이체도 받을 예정인가요?</label>
+      <label class="flabel">현장 계좌이체를 받을 예정이신가요?</label>
       <div class="choices">
         <div class="chip"><input type="radio" name="transfer_yn" id="ty1" value="예"><label for="ty1">예</label></div>
         <div class="chip"><input type="radio" name="transfer_yn" id="ty2" value="아니오"><label for="ty2">아니오</label></div>
@@ -598,8 +598,8 @@
       <label class="flabel">축의금 반환 요청 시 대응 방법</label>
       <div class="choices">
         <div class="chip block"><input type="radio" name="refund_way" id="rf1" value="반환 불가 안내(예식 종료 후 신랑 또는 신부님께 직접 연락드리도록 안내)"><label for="rf1">반환 불가 안내(예식 종료 후 신랑 또는 신부님께 직접 연락드리도록 안내)</label></div>
-        <div class="chip block"><input type="radio" name="refund_way" id="rf2" value="신분증 확인 후 반환"><label for="rf2">신분증 확인 후 반환</label></div>
         <div class="chip block"><input type="radio" name="refund_way" id="rf3" value="성함 및 연락처 메모 후 반환"><label for="rf3">성함 및 연락처 메모 후 반환</label></div>
+        <div class="chip block"><input type="radio" name="refund_way" id="rf5" value="사유 확인 후 반환(성함 및 사유 메모)"><label for="rf5">사유 확인 후 반환(성함 및 사유 메모)</label></div>
         <div class="chip block"><input type="radio" name="refund_way" id="rf4" value="기타"><label for="rf4">기타</label></div>
       </div>
       <div class="etc-input"><input type="text" name="refund_way_etc" placeholder="기타 내용을 입력해주세요"></div>
@@ -704,14 +704,15 @@
       </div>
     </div>
     <div class="field">
-      <label class="flabel">식권 추가 지급 요청 시 대응 방법 (분실 또는 인원 추가)</label>
+      <label class="flabel">계좌이체 및 직접 축의금 전달하신 경우 식권지급 방법</label>
       <div class="choices">
-        <div class="chip block"><input type="radio" name="ticket_reissue_way" id="trw1" value="축의금 내역 확인 후 지급(성함, 연락처 기재)"><label for="trw1">축의금 내역 확인 후 지급(성함, 연락처 기재)</label></div>
-        <div class="chip block"><input type="radio" name="ticket_reissue_way" id="trw2" value="축의금 내역만 확인 후 지급(성함,연락처 기재 X)"><label for="trw2">축의금 내역만 확인 후 지급(성함,연락처 기재 X)</label></div>
-        <div class="chip block"><input type="radio" name="ticket_reissue_way" id="trw3" value="지급 안 함"><label for="trw3">지급 안 함</label></div>
-        <div class="chip block"><input type="radio" name="ticket_reissue_way" id="trw4" value="기타"><label for="trw4">기타</label></div>
+        <div class="chip block"><input type="radio" name="ticket_paid_way" id="tpw1" value="별도 확인없이 지급"><label for="tpw1">별도 확인없이 지급</label></div>
+        <div class="chip block"><input type="radio" name="ticket_paid_way" id="tpw2" value="모바일 청첩장 확인 후 지급"><label for="tpw2">모바일 청첩장 확인 후 지급</label></div>
+        <div class="chip block"><input type="radio" name="ticket_paid_way" id="tpw5" value="계좌이체 내역 확인 후 지급"><label for="tpw5">계좌이체 내역 확인 후 지급</label></div>
+        <div class="chip block"><input type="radio" name="ticket_paid_way" id="tpw3" value="연락처(신랑/신부 또는 혼주)보유 여부 확인 후 지급"><label for="tpw3">연락처(신랑/신부 또는 혼주)보유 여부 확인 후 지급</label></div>
+        <div class="chip block"><input type="radio" name="ticket_paid_way" id="tpw4" value="기타"><label for="tpw4">기타</label></div>
       </div>
-      <div class="etc-input"><input type="text" name="ticket_reissue_way_etc" placeholder="기타 내용을 입력해주세요"></div>
+      <div class="etc-input"><input type="text" name="ticket_paid_way_etc" placeholder="기타 내용을 입력해주세요"></div>
     </div>
   </div>
 
@@ -1128,7 +1129,7 @@ function label(name){
     ticket_deliverer_relation:'본식 당일 식권 전달자 - 관계', ticket_deliverer_name:'본식 당일 식권 전달자 - 성함', ticket_deliverer_phone:'본식 당일 식권 전달자 - 연락처',
     ticket_out_way:'식권 소진 시 대응 방법', ticket_out_place:'식권 소진 시 추가 수령 장소',
     child_ticket_age:'소인 식권의 나이 기준', child_to_adult_ticket:'소인 식권 소진 시 대인 식권 사용 가능 여부',
-    ticket_reissue_way:'식권 추가 지급 요청 시 대응 방법', ticket_reissue_way_etc:'식권 추가 지급 대응(기타)',
+    ticket_paid_way:'계좌이체 및 직접 축의금 전달하신 경우 식권지급 방법', ticket_paid_way_etc:'계좌이체·직접 전달 식권지급 방법(기타)',
     vip_yn:'VIP 명단 작성 여부',
     gift_yn:'답례품 제공 여부', gift_type:'답례품 종류', gift_place:'답례품 수령 장소', gift_target:'답례품 수령 대상',
     gift_criteria:'답례품 수령 기준', gift_script:'답례품 안내 멘트',
@@ -1151,7 +1152,7 @@ const SECTIONS = [
   ['02. 양가 정보',['groom_side_name','bride_side_name']],
   ['03. 관계 설정',['agency_awareness','relation_type','relation_type_etc']],
   ['04. 축의금 정리방식',['money_op','transfer_yn','groom_account','bride_account','refund_way','refund_way_etc']],
-  ['05. 식권 운영 및 제작 서비스',['ticket_prepared','ticket_order_apply','ticket_order_qty','ticket_design_pref','ticket_adult_groom','ticket_child_groom','ticket_adult_bride','ticket_child_bride','ticket_deliverer_relation','ticket_deliverer_name','ticket_deliverer_phone','transfer_check_way','mobile_invitation_url','ticket_cross_use','ticket_out_way','ticket_out_place','child_ticket_age','child_to_adult_ticket','ticket_reissue_way','ticket_reissue_way_etc']],
+  ['05. 식권 운영 및 제작 서비스',['ticket_prepared','ticket_order_apply','ticket_order_qty','ticket_design_pref','ticket_adult_groom','ticket_child_groom','ticket_adult_bride','ticket_child_bride','ticket_deliverer_relation','ticket_deliverer_name','ticket_deliverer_phone','transfer_check_way','mobile_invitation_url','ticket_cross_use','ticket_out_way','ticket_out_place','child_ticket_age','child_to_adult_ticket','ticket_paid_way','ticket_paid_way_etc']],
   ['06. 답례품',['gift_yn','gift_type','gift_place','gift_target','gift_criteria','gift_script']],
   ['07. 하객 안내사항',['info_parking_way','info_parking_time','info_atm','info_hall','info_bride_room','info_meal_time','info_child_ticket']],
   ['09. 축의금 인계',['handover_relation_groom','handover_name_groom','handover_phone_groom','handover_relation_bride','handover_name_bride','handover_phone_bride']],
