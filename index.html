@@ -672,13 +672,6 @@
       <input type="text" name="ticket_deliverer_name" placeholder="성함" style="margin-bottom:8px;">
       <input type="tel" name="ticket_deliverer_phone" placeholder="010-0000-0000" maxlength="13">
     </div>
-    <div class="field">
-      <label class="flabel">축의금 계좌이체 하객 응대 방법</label>
-      <div class="choices">
-        <div class="chip block"><input type="radio" name="transfer_check_way" id="tcw1" value="모바일 청첩장 확인"><label for="tcw1">모바일 청첩장 확인</label></div>
-        <div class="chip block"><input type="radio" name="transfer_check_way" id="tcw2" value="이체 내역 확인"><label for="tcw2">이체 내역 확인</label></div>
-      </div>
-    </div>
     <div class="field"><label class="flabel">모바일 청첩장 주소</label><input type="text" name="mobile_invitation_url" placeholder="예: https://www.mcard.co.kr/..."></div>
     <div class="field">
       <label class="flabel">식권 소진 시, 신랑측(또는 신부측) 식권 교차 사용 가능 여부</label>
@@ -1125,7 +1118,7 @@ function label(name){
     ticket_adult_groom:'배정 식권수량(신랑측 대인)', ticket_child_groom:'배정 식권수량(신랑측 소인)',
     ticket_adult_bride:'배정 식권수량(신부측 대인)', ticket_child_bride:'배정 식권수량(신부측 소인)',
     ticket_prepared:'식권 준비 여부', ticket_order_apply:'식권 제작 서비스 신청 여부', ticket_order_qty:'제작 필요 식권 수량', ticket_design_pref:'식권 원하는 디자인 또는 요청사항(선택)',
-    transfer_check_way:'축의금 계좌이체 하객 응대 방법', mobile_invitation_url:'모바일 청첩장 주소', ticket_cross_use:'식권 교차 사용 가능 여부',
+    mobile_invitation_url:'모바일 청첩장 주소', ticket_cross_use:'식권 교차 사용 가능 여부',
     ticket_deliverer_relation:'본식 당일 식권 전달자 - 관계', ticket_deliverer_name:'본식 당일 식권 전달자 - 성함', ticket_deliverer_phone:'본식 당일 식권 전달자 - 연락처',
     ticket_out_way:'식권 소진 시 대응 방법', ticket_out_place:'식권 소진 시 추가 수령 장소',
     child_ticket_age:'소인 식권의 나이 기준', child_to_adult_ticket:'소인 식권 소진 시 대인 식권 사용 가능 여부',
@@ -1152,7 +1145,7 @@ const SECTIONS = [
   ['02. 양가 정보',['groom_side_name','bride_side_name']],
   ['03. 관계 설정',['agency_awareness','relation_type','relation_type_etc']],
   ['04. 축의금 정리방식',['money_op','transfer_yn','groom_account','bride_account','refund_way','refund_way_etc']],
-  ['05. 식권 운영 및 제작 서비스',['ticket_prepared','ticket_order_apply','ticket_order_qty','ticket_design_pref','ticket_adult_groom','ticket_child_groom','ticket_adult_bride','ticket_child_bride','ticket_deliverer_relation','ticket_deliverer_name','ticket_deliverer_phone','transfer_check_way','mobile_invitation_url','ticket_cross_use','ticket_out_way','ticket_out_place','child_ticket_age','child_to_adult_ticket','ticket_paid_way','ticket_paid_way_etc']],
+  ['05. 식권 운영 및 제작 서비스',['ticket_prepared','ticket_order_apply','ticket_order_qty','ticket_design_pref','ticket_adult_groom','ticket_child_groom','ticket_adult_bride','ticket_child_bride','ticket_deliverer_relation','ticket_deliverer_name','ticket_deliverer_phone','mobile_invitation_url','ticket_cross_use','ticket_out_way','ticket_out_place','child_ticket_age','child_to_adult_ticket','ticket_paid_way','ticket_paid_way_etc']],
   ['06. 답례품',['gift_yn','gift_type','gift_place','gift_target','gift_criteria','gift_script']],
   ['07. 하객 안내사항',['info_parking_way','info_parking_time','info_atm','info_hall','info_bride_room','info_meal_time','info_child_ticket']],
   ['09. 축의금 인계',['handover_relation_groom','handover_name_groom','handover_phone_groom','handover_relation_bride','handover_name_bride','handover_phone_bride']],
