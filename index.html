@@ -1202,6 +1202,29 @@ function showToast(msg){
 const STORAGE_KEY = 'mw_survey_draft_v1';
 
 // ====== Google Apps Script 연동 설정 ======
+
+/* ===== 제출 시 축의금 관리 시스템으로 설정서 자동 전달 (예식일 + 신랑/신부 성함으로 행사와 자동 매칭) ===== */
+const MW_SB_URL = 'https://mvcwqdrsyfzmypwivxfz.supabase.co';
+const MW_SB_KEY = 'sb_publishable_qTflSqaZpSp9_VYiuyzD3g_O7qsFXwY';
+// 축의대 운영에 필요한 항목만 전달 (신랑·신부 연락처, 계약자 성함 등은 보내지 않음)
+const MW_INBOX_KEYS = ['groom_name','bride_name','wedding_date','wedding_time','venue_name','hall_name',
+  'relation_type','relation_type_etc','agency_awareness','money_op','transfer_yn','groom_account','bride_account','refund_way','refund_way_etc',
+  'ticket_paid_way','ticket_paid_way_etc',
+  'vip_yn','vip_name','vip_relation','vip_contact','vip_memo',
+  'info_parking_way','info_parking_time','info_atm','info_hall','info_bride_room','info_meal_time','info_child_ticket'];
+function pushSetupToMomentWorks(){
+  try{
+    const all = collectFormData(), data = {};
+    MW_INBOX_KEYS.forEach(k=>{ if(all[k] !== undefined) data[k] = all[k]; });
+    fetch(MW_SB_URL + '/rest/v1/rpc/submit_setup_inbox', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':MW_SB_KEY, 'Authorization':'Bearer ' + MW_SB_KEY },
+      body: JSON.stringify({ p_data: data }),
+      keepalive: true
+    }).catch(e=>console.warn('축의금 시스템 전달 실패(제출에는 영향 없음)', e));
+  }catch(e){ console.warn('축의금 시스템 전달 준비 실패(제출에는 영향 없음)', e); }
+}
+
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzgy0MsopPhXo2y4idf8Y-lRMIv-tY5FWs-bfAJR3XTVWgN-oUDCivDKVwPCDaXna5qNQ/exec';
 
 // 예식 시작시간: 시·분(24시간제) select 값을 조합해 hidden input(wedding_time)에 반영
@@ -1574,6 +1597,7 @@ document.getElementById('submitContractBtn').addEventListener('click', async () 
         console.log(result);
 
         if (result.success) {
+            pushSetupToMomentWorks();   // 축의금 관리 시스템에 자동 전달 (실패해도 제출은 정상 완료)
             alert('설정서 제출이 완료되었습니다.');
             localStorage.removeItem(STORAGE_KEY);
             form.reset();
